@@ -1,0 +1,36 @@
+package version
+
+import (
+	_ "embed"
+	"fmt"
+	"io"
+	"runtime"
+	"strings"
+)
+
+//go:embed VERSION
+var versionFile string
+
+var (
+	Version string
+)
+
+func init() {
+	if Version == "" {
+		Version = strings.TrimSpace(versionFile)
+	}
+
+	if Version == "" {
+		Version = "dev"
+	}
+}
+
+func Print() {
+	fmt.Printf("lix version %s\n", Version)
+	fmt.Printf("%s/%s\n", runtime.GOOS, runtime.GOARCH)
+}
+
+func Fprint(w io.Writer) {
+	fmt.Fprintf(w, "lix version %s\n", Version)
+	fmt.Fprintf(w, "%s/%s\n", runtime.GOOS, runtime.GOARCH)
+}
