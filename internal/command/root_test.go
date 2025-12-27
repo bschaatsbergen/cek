@@ -59,7 +59,7 @@ func TestAddCommands(t *testing.T) {
 	root := command.NewRootCommand()
 	command.AddCommands(root, cli)
 
-	expectedCommands := []string{"inspect", "ls", "version"}
+	expectedCommands := []string{"version", "inspect", "cat"}
 	for _, name := range expectedCommands {
 		cmd, _, err := root.Find([]string{name})
 		assert.NoError(t, err, "command %s should exist", name)

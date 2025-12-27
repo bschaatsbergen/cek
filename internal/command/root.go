@@ -130,6 +130,6 @@ func AddCommands(root *cobra.Command, cli *CLI) {
 	root.AddCommand(
 		newVersionCommand(cli),
 		NewInspectCommand(cli),
-		NewLsCommand(cli),
+		NewCatCommand(cli),
 	)
 }
