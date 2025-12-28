@@ -2,7 +2,7 @@
 
 List, inspect and explore OCI container images, their layers and contents.
 
-CEK is a command-line utility for exploring OCI container images without running
+cek is a command-line utility for exploring OCI container images without running
 them. It can read images directly from local container daemons (Docker, Podman,
 containerd, etc.) or pull them from remote registries, allowing you to inspect
 metadata, browse files and directories, read file contents, and compare image
@@ -107,7 +107,7 @@ with common ancestry.
 
 ## Container Daemon Support
 
-lix works with all popular container daemons by connecting to
+cek works with all popular container daemons by connecting to
 the container daemon socket. The daemon provides access to locally cached
 images, avoiding rate limits when exploring images you've already pulled.
 

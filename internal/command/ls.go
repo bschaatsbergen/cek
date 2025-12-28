@@ -20,6 +20,7 @@ type LsOptions struct {
 	Filter   string
 	Platform string
 	Pull     string
+	Path     string
 }
 
 type FileInfo struct {
@@ -34,12 +35,13 @@ func NewLsCommand(cli *CLI) *cobra.Command {
 	}
 
 	cmd := &cobra.Command{
-		Use:   "ls <image>",
+		Use:   "ls <image> [path]",
 		Short: "List files in an OCI image or specific layer",
-		Long: highlight("cek ls alpine:latest") + "\n\n" +
+		Long: highlight("cek ls alpine:latest /etc") + "\n\n" +
 			"List files in an OCI image or specific layer.\n\n" +
 			"By default, shows the merged overlay filesystem (all layers combined).\n" +
 			"Use --layer to show files from a specific layer only.\n\n" +
+			"Optionally specify a path to list only files under that directory.\n\n" +
 			"Filter patterns support doublestar matching:\n" +
 			"  fontconfig              Substring match anywhere in path\n" +
 			"  *.conf                  Files ending with .conf (basename only)\n" +
@@ -47,12 +49,17 @@ func NewLsCommand(cli *CLI) *cobra.Command {
 			"  /etc/**/*.conf          .conf files under /etc\n\n" +
 			"Examples:\n" +
 			"  cek ls alpine:latest\n" +
+			"  cek ls alpine:latest /etc\n" +
+			"  cek ls nginx:latest /etc/nginx\n" +
 			"  cek ls --layer 1 alpine:latest\n" +
 			"  cek ls --filter '*.conf' nginx:alpine\n" +
 			"  cek ls --filter '**/nginx/*.conf' nginx:alpine\n",
-		Args: cobra.ExactArgs(1),
+		Args: cobra.RangeArgs(1, 2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			imageRef := args[0]
+			if len(args) > 1 {
+				opts.Path = args[1]
+			}
 			if err := RunLs(cmd.Context(), cli, imageRef, &opts); err != nil {
 				return err
 			}
@@ -110,12 +117,20 @@ func RunLs(ctx context.Context, cli *CLI, imageRef string, opts *LsOptions) erro
 		}
 	}
 
+	if opts.Path != "" {
+		files = filterByPath(files, opts.Path)
+	}
+
 	if opts.Filter != "" {
 		files = filterFiles(files, opts.Filter)
 	}
 
 	if len(files) == 0 {
-		if opts.Filter != "" {
+		if opts.Path != "" && opts.Filter != "" {
+			cli.Printf("No files matching pattern '%s' in path '%s'\n", opts.Filter, opts.Path)
+		} else if opts.Path != "" {
+			cli.Printf("No files found in path '%s'\n", opts.Path)
+		} else if opts.Filter != "" {
 			cli.Printf("No files matching pattern '%s'\n", opts.Filter)
 		} else {
 			cli.Printf("No files found\n")
@@ -298,6 +313,20 @@ func filterFiles(files []FileInfo, pattern string) []FileInfo {
 		}
 
 		if matched {
+			filtered = append(filtered, file)
+		}
+	}
+	return filtered
+}
+
+func filterByPath(files []FileInfo, path string) []FileInfo {
+	// Normalize path to have leading slash and no trailing slash
+	normalizedPath := "/" + strings.Trim(path, "/")
+
+	var filtered []FileInfo
+	for _, file := range files {
+		// Check if file path starts with the directory path
+		if file.Path == normalizedPath || strings.HasPrefix(file.Path, normalizedPath+"/") {
 			filtered = append(filtered, file)
 		}
 	}
