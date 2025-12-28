@@ -104,9 +104,9 @@ lix compare alpine:3.19 alpine:3.18
 The comparison skips shared base layers automatically, reducing I/O for images
 with common ancestry.
 
-## Container Runtime Support
+## Container Daemon Support
 
-lix works with Docker, Podman, Colima, containerd, and nerdctl by connecting to
+lix works with all popular container daemons by connecting to
 the container daemon socket. The daemon provides access to locally cached
 images, avoiding rate limits when exploring images you've already pulled.
 
