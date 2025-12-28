@@ -31,6 +31,6 @@ func Print() {
 }
 
 func Fprint(w io.Writer) {
-	fmt.Fprintf(w, "cek version %s\n", Version)
-	fmt.Fprintf(w, "%s/%s\n", runtime.GOOS, runtime.GOARCH)
+	_, _ = fmt.Fprintf(w, "cek version %s\n", Version)
+	_, _ = fmt.Fprintf(w, "%s/%s\n", runtime.GOOS, runtime.GOARCH)
 }

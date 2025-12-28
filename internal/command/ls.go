@@ -126,27 +126,30 @@ func RunLs(ctx context.Context, cli *CLI, imageRef string, opts *LsOptions) erro
 	}
 
 	if len(files) == 0 {
-		if opts.Path != "" && opts.Filter != "" {
+		switch {
+		case opts.Path != "" && opts.Filter != "":
 			cli.Printf("No files matching pattern '%s' in path '%s'\n", opts.Filter, opts.Path)
-		} else if opts.Path != "" {
+		case opts.Path != "":
 			cli.Printf("No files found in path '%s'\n", opts.Path)
-		} else if opts.Filter != "" {
+		case opts.Filter != "":
 			cli.Printf("No files matching pattern '%s'\n", opts.Filter)
-		} else {
+		default:
 			cli.Printf("No files found\n")
 		}
 		return nil
 	}
 
 	//TODO: move this to the view package
-	w := tabwriter.NewWriter(cli.Stream.Writer, 0, 0, 2, ' ', 0)
-	fmt.Fprintf(w, "Mode\tSize\tPath\n")
+	w := tabwriter.NewWriter(cli.Writer, 0, 0, 2, ' ', 0)
+	_, _ = fmt.Fprintf(w, "Mode\tSize\tPath\n")
 
 	for _, file := range files {
-		fmt.Fprintf(w, "%s\t%s\t%s\n", file.Mode, oci.FormatBytes(file.Size), file.Path)
+		_, _ = fmt.Fprintf(w, "%s\t%s\t%s\n", file.Mode, oci.FormatBytes(file.Size), file.Path)
 	}
 
-	w.Flush()
+	if err := w.Flush(); err != nil {
+		return fmt.Errorf("failed to flush output: %w", err)
+	}
 
 	return nil
 }
@@ -158,7 +161,9 @@ func extractFilesFromLayer(layer interface {
 	if err != nil {
 		return nil, fmt.Errorf("failed to get uncompressed layer: %w", err)
 	}
-	defer rc.Close()
+	defer func() {
+		_ = rc.Close()
+	}()
 
 	var files []FileInfo
 	tr := tar.NewReader(rc)
@@ -206,7 +211,7 @@ func extractMergedFilesystem(layers []v1.Layer) ([]FileInfo, error) {
 				break
 			}
 			if err != nil {
-				rc.Close()
+				_ = rc.Close()
 				return nil, fmt.Errorf("failed to read tar header: %w", err)
 			}
 
@@ -225,7 +230,7 @@ func extractMergedFilesystem(layers []v1.Layer) ([]FileInfo, error) {
 				Path: path,
 			}
 		}
-		rc.Close()
+		_ = rc.Close()
 	}
 
 	files := make([]FileInfo, 0, len(fileMap))

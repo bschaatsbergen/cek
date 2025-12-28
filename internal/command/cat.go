@@ -110,12 +110,14 @@ func RunCat(ctx context.Context, cli *CLI, imageRef, filePath string, opts *CatO
 // Returns (content, found, error) where found indicates whether the file exists.
 func extractFileFromLayer(layer interface {
 	Uncompressed() (io.ReadCloser, error)
-}, targetPath string) (string, bool, error) {
+}, targetPath string) (content string, found bool, err error) {
 	rc, err := layer.Uncompressed()
 	if err != nil {
 		return "", false, fmt.Errorf("failed to get uncompressed layer: %w", err)
 	}
-	defer rc.Close()
+	defer func() {
+		_ = rc.Close()
+	}()
 
 	tr := tar.NewReader(rc)
 	normalizedTarget := "/" + strings.TrimPrefix(targetPath, "/")

@@ -105,7 +105,7 @@ func TestInspectCommand_WithPlatform(t *testing.T) {
 	buf := new(bytes.Buffer)
 	cli := command.NewCLI(view.ViewHuman, buf, view.LogLevelSilent)
 	cmd := command.NewInspectCommand(cli)
-	cmd.SetArgs([]string{"alpine:latest", "--platform", "linux/amd64"})
+	cmd.SetArgs([]string{"alpine:latest", "--platform", "linux/amd64", "--pull", "always"})
 
 	err := cmd.Execute()
 	require.NoError(t, err)
@@ -176,7 +176,7 @@ func TestRunInspect_WithPlatformSpecified(t *testing.T) {
 	buf := new(bytes.Buffer)
 	cli := command.NewCLI(view.ViewHuman, buf, view.LogLevelSilent)
 	cmd := command.NewInspectCommand(cli)
-	cmd.SetArgs([]string{"alpine:latest", "--platform", "linux/amd64"})
+	cmd.SetArgs([]string{"alpine:latest", "--platform", "linux/amd64", "--pull", "always"})
 
 	err := cmd.Execute()
 	require.NoError(t, err)

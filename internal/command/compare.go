@@ -219,7 +219,7 @@ func extractFileListFromLayers(layers []v1.Layer, otherLayerDigests map[string]b
 				break
 			}
 			if err != nil {
-				rc.Close()
+				_ = rc.Close()
 				return nil, fmt.Errorf("failed to read tar header: %w", err)
 			}
 
@@ -239,12 +239,12 @@ func extractFileListFromLayers(layers []v1.Layer, otherLayerDigests map[string]b
 				files[path] = true
 				// We only need paths, not content. Discard to avoid memory pressure.
 				if _, err := io.Copy(io.Discard, tr); err != nil {
-					rc.Close()
+					_ = rc.Close()
 					return nil, fmt.Errorf("failed to skip file contents: %w", err)
 				}
 			}
 		}
-		rc.Close()
+		_ = rc.Close()
 	}
 
 	return files, nil

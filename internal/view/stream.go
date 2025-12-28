@@ -18,11 +18,11 @@ func NewStream(w io.Writer) *Stream {
 }
 
 func (s *Stream) Println(args ...any) {
-	fmt.Fprintln(s.Writer, args...)
+	_, _ = fmt.Fprintln(s.Writer, args...)
 }
 
 func (s *Stream) Printf(fmtStr string, args ...any) {
-	fmt.Fprintf(s.Writer, fmtStr, args...)
+	_, _ = fmt.Fprintf(s.Writer, fmtStr, args...)
 }
 
 func (s *Stream) PrintVersion() {

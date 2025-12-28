@@ -41,7 +41,7 @@ func NewExportCommand(cli *CLI) *cobra.Command {
 	}
 
 	cmd.Flags().StringVarP(&opts.Output, "output", "o", "", "Output file path (required)")
-	cmd.MarkFlagRequired("output")
+	_ = cmd.MarkFlagRequired("output")
 	cmd.Flags().StringVar(&opts.Pull, "pull", "if-not-present", "Pull policy (always, if-not-present, never)")
 	cmd.Flags().StringVar(&opts.Platform, "platform", "", "Target platform (e.g., linux/amd64, linux/arm64)")
 
