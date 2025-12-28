@@ -5,8 +5,8 @@ List, inspect and explore OCI container images, their layers and contents.
 cek is a command-line utility for exploring OCI container images without running
 them. It can read images directly from local container daemons (Docker, Podman,
 containerd, etc.) or pull them from remote registries, allowing you to inspect
-metadata, browse files and directories, read file contents, and compare image
-versions or layers.
+metadata, browse files and directories, read file contents, compare image
+versions or layers, and export images to tar files.
 
 ## Installation
 
@@ -134,6 +134,28 @@ cek tags python | grep -E '^3\.(11|12)'
 ```
 
 Note: This queries the remote registry directly, not the local daemon cache.
+
+### Export images to tar files
+
+Export OCI images to tar files, including manifest, config, and all layers.
+These tarballs make it easy to move images between environments, share images
+without a registry, or back them up for disaster recovery.
+
+```bash
+# Export an image to a tar file
+cek export alpine:latest -o alpine.tar
+
+# Export a specific platform
+cek export --platform linux/amd64 ubuntu:22.04 -o ubuntu-amd64.tar
+
+# Load the exported tar into Docker or Podman
+docker load -i alpine.tar
+podman load -i alpine.tar
+```
+
+Use cases include air-gapped deployments, image backups, sharing images without
+pushing to a registry, and transferring images between different container
+runtimes.
 
 ## Container Daemon Support
 
