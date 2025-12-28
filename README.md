@@ -114,11 +114,32 @@ cek compare alpine:3.19 alpine:3.18
 The comparison skips shared base layers automatically, reducing I/O for images
 with common ancestry.
 
+### List available tags
+
+List all tags in a repository from the remote registry, allowing you to find
+available tags or a specific tag.
+
+```bash
+cek tags nginx
+
+# Limit output to first N tags
+cek tags alpine --limit 20
+
+# Pipe to less for pagination
+cek tags nginx | less
+
+# Filter tags with grep
+cek tags nginx | grep '^1\.2'
+cek tags python | grep -E '^3\.(11|12)'
+```
+
+Note: This queries the remote registry directly, not the local daemon cache.
+
 ## Container Daemon Support
 
-cek works with all popular container daemons by connecting to
-the container daemon socket. The daemon provides access to locally cached
-images, avoiding rate limits when exploring images you've already pulled.
+cek works with all popular container daemons by connecting to the container
+daemon socket. The daemon provides access to locally cached images, avoiding
+rate limits when exploring images you've already pulled.
 
 Set `DOCKER_HOST` to point to your runtime's socket:
 
