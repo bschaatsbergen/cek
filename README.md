@@ -1,19 +1,22 @@
-# CEK (Container Exploration Kit)
+# cek (Container Exploration Kit)
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/bschaatsbergen/cek)](https://goreportcard.com/report/github.com/bschaatsbergen/cek)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-<img src="assets/image.png" width="140" align="right" />
+Explore OCI container images without running them.
 
-List, inspect and explore OCI container images, their layers and contents.
+cek is a command-line utility for filesystem exploration inside OCI container
+images. It focuses on browsing files, reading contents, and inspecting layer
+mechanics—without running containers. cek reads images directly from local
+container daemons (Docker, Podman, containerd, etc.) or pulls them from remote
+registries.
 
-CEK is a command-line utility for exploring OCI container images without running
-them. It can read images directly from local container daemons (Docker, Podman,
-containerd, etc.) or pull them from remote registries, allowing you to inspect
-metadata, browse files and directories, read file contents, compare image
-versions or layers, and export images to tar files.
+cek runs without root privileges and works with any OCI-compliant image
+registry. While it does not require a container daemon, it can leverage one when
+available to access locally cached images and avoid registry rate limits. Most
+importantly, cek never runs containers.
 
-## Installation
+## Installation 
 
 ```bash
 go install github.com/bschaatsbergen/cek@latest
@@ -164,7 +167,7 @@ runtimes.
 
 ## Container Daemon Support
 
-CEK works with all popular container daemons by connecting to the container
+cek works with all popular container daemons by connecting to the container
 daemon socket. The daemon provides access to locally cached images, avoiding
 rate limits when exploring images you've already pulled.
 
@@ -210,8 +213,8 @@ cek inspect --pull never nginx:latest
 ```
 
 Images pulled by `docker pull`, `nerdctl pull` or `podman pull` are immediately
-available to CEK without additional downloads.
+available to cek without additional downloads.
 
-When using `if-not-present`, CEK checks the local container daemon first. If the
+When using `if-not-present`, cek checks the local container daemon first. If the
 image exists locally, it's used immediately without any network calls. If not
-found locally, CEK pulls from the remote registry.
+found locally, cek pulls from the remote registry.
