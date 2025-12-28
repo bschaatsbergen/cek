@@ -17,8 +17,8 @@ func newVersionCommand(cli *CLI) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "version",
 		Short: "Show version information",
-		Long: highlight("lix version") + "\n\n" +
-			"Display the current version of the lix CLI.\n\n" +
+		Long: highlight("cek version") + "\n\n" +
+			"Display the current version of the cek CLI.\n\n" +
 			"This information is useful for bug reports, ensuring team\n" +
 			"consistency, and verifying compatibility with documentation\n" +
 			"and automation scripts.\n",

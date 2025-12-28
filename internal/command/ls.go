@@ -10,7 +10,7 @@ import (
 	"text/tabwriter"
 
 	"github.com/bmatcuk/doublestar/v4"
-	"github.com/bschaatsbergen/lix/internal/oci"
+	"github.com/bschaatsbergen/cek/internal/oci"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/spf13/cobra"
 )
@@ -36,7 +36,7 @@ func NewLsCommand(cli *CLI) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "ls <image>",
 		Short: "List files in an OCI image or specific layer",
-		Long: highlight("lix ls alpine:latest") + "\n\n" +
+		Long: highlight("cek ls alpine:latest") + "\n\n" +
 			"List files in an OCI image or specific layer.\n\n" +
 			"By default, shows the merged overlay filesystem (all layers combined).\n" +
 			"Use --layer to show files from a specific layer only.\n\n" +
@@ -46,10 +46,10 @@ func NewLsCommand(cli *CLI) *cobra.Command {
 			"  **/fontconfig/*.conf    .conf files in any fontconfig directory\n" +
 			"  /etc/**/*.conf          .conf files under /etc\n\n" +
 			"Examples:\n" +
-			"  lix ls alpine:latest\n" +
-			"  lix ls --layer 1 alpine:latest\n" +
-			"  lix ls --filter '*.conf' nginx:alpine\n" +
-			"  lix ls --filter '**/nginx/*.conf' nginx:alpine\n",
+			"  cek ls alpine:latest\n" +
+			"  cek ls --layer 1 alpine:latest\n" +
+			"  cek ls --filter '*.conf' nginx:alpine\n" +
+			"  cek ls --filter '**/nginx/*.conf' nginx:alpine\n",
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			imageRef := args[0]

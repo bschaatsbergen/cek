@@ -4,15 +4,15 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/bschaatsbergen/lix/internal/command"
-	"github.com/bschaatsbergen/lix/internal/view"
+	"github.com/bschaatsbergen/cek/internal/command"
+	"github.com/bschaatsbergen/cek/internal/view"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestNewRootCommand(t *testing.T) {
 	cmd := command.NewRootCommand()
 
-	assert.Equal(t, "lix", cmd.Use)
+	assert.Equal(t, "cek", cmd.Use)
 	assert.NotEmpty(t, cmd.Short)
 	assert.NotEmpty(t, cmd.Long)
 	assert.NotEmpty(t, cmd.Version)
@@ -51,7 +51,7 @@ func TestNewRootCommand_NoArgs_ShowsHelp(t *testing.T) {
 
 	err := cmd.Execute()
 	assert.NoError(t, err)
-	assert.Contains(t, buf.String(), "lix")
+	assert.Contains(t, buf.String(), "cek")
 }
 
 func TestAddCommands(t *testing.T) {

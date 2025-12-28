@@ -26,11 +26,11 @@ func init() {
 }
 
 func Print() {
-	fmt.Printf("lix version %s\n", Version)
+	fmt.Printf("cek version %s\n", Version)
 	fmt.Printf("%s/%s\n", runtime.GOOS, runtime.GOARCH)
 }
 
 func Fprint(w io.Writer) {
-	fmt.Fprintf(w, "lix version %s\n", Version)
+	fmt.Fprintf(w, "cek version %s\n", Version)
 	fmt.Fprintf(w, "%s/%s\n", runtime.GOOS, runtime.GOARCH)
 }

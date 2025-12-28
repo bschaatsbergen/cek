@@ -1,24 +1,25 @@
-# lix
+# cek
 
 List, inspect and explore OCI container images, their layers and contents.
 
-lix is a CLI tool for exploring container images without running them. It reads
-images directly from local container runtimes (Docker, Podman, containerd) or remote
-registries, allowing you to inspect metadata, list files, read contents, and
-compare image versions.
+CEK is a command-line utility for exploring OCI container images without running
+them. It can read images directly from local container daemons (Docker, Podman,
+containerd, etc.) or pull them from remote registries, allowing you to inspect
+metadata, browse files and directories, read file contents, and compare image
+versions or layers.
 
 ## Installation
 
 ```text
-go install github.com/bschaatsbergen/lix@latest
+go install github.com/bschaatsbergen/cek@latest
 ```
 
 Or build from source:
 
 ```text
-git clone https://github.com/bschaatsbergen/lix.git
-cd lix
-go build -o lix .
+git clone https://github.com/bschaatsbergen/cek.git
+cd cek
+go build -o cek .
 ```
 
 ## Usage
@@ -29,7 +30,7 @@ View image details including digest, creation time, architecture, total size,
 and individual layer information.
 
 ```text
-lix inspect nginx:latest
+cek inspect nginx:latest
 Image: nginx:latest
 Registry: index.docker.io
 Digest: sha256:ec0ee8695f2f71addca9b40f27df0fdfbde460485a2b68b834e18ea856542f1e
@@ -50,19 +51,19 @@ Layers:
 
 ### List files in an image
 
-By default, `lix ls` shows the merged overlay filesystem, which is what you see
+By default, `cek ls` shows the merged overlay filesystem, which is what you see
 inside a running container. All layers are combined, with upper layers
 overriding lower ones.
 
 ```text
 # Show all files (merged overlay view)
-lix ls nginx:latest
+cek ls nginx:latest
 
 # Filter by pattern (supports doublestar glob matching)
-lix ls --filter '**/nginx/*.conf' nginx:latest
+cek ls --filter '**/nginx/*.conf' nginx:latest
 
 # Show files from a specific layer only
-lix ls --layer 1 nginx:latest
+cek ls --layer 1 nginx:latest
 ```
 
 Patterns without slashes match against basenames. Patterns with slashes match
@@ -75,17 +76,17 @@ container. Output can be piped to other commands or redirected to files for
 inspection, diffing, or processing.
 
 ```bash
-lix cat nginx:latest /etc/nginx/nginx.conf
+cek cat nginx:latest /etc/nginx/nginx.conf
 
 # Read from a specific layer
-lix cat --layer 2 nginx:latest /etc/os-release
+cek cat --layer 2 nginx:latest /etc/os-release
 
 # Pipe to other tools
-lix cat alpine:latest /etc/os-release | grep VERSION_ID
+cek cat alpine:latest /etc/os-release | grep VERSION_ID
 
 # Compare configuration between image versions
-diff <(lix cat nginx:1.25 /etc/nginx/nginx.conf) \
-     <(lix cat nginx:1.24 /etc/nginx/nginx.conf)
+diff <(cek cat nginx:1.25 /etc/nginx/nginx.conf) \
+     <(cek cat nginx:1.24 /etc/nginx/nginx.conf)
 ```
 
 The `cat` command searches layers top-down to find the final file state after
@@ -98,7 +99,7 @@ Only files from unique layers are analyzed, making comparisons fast even for
 large images with shared base layers.
 
 ```text
-lix compare alpine:3.19 alpine:3.18
+cek compare alpine:3.19 alpine:3.18
 ```
 
 The comparison skips shared base layers automatically, reducing I/O for images
@@ -129,31 +130,31 @@ export DOCKER_HOST=unix://$XDG_RUNTIME_DIR/podman/podman.sock
 export DOCKER_HOST=unix://$HOME/.local/share/containers/podman/machine/podman.sock
 ```
 
-If `DOCKER_HOST` is not set, lix will attempt to use the default Docker socket
+If `DOCKER_HOST` is not set, cek will attempt to use the default Docker socket
 location.
 
 ## Pull Policies
 
-lix defaults to `if-not-present` to avoid registry rate limits. Images are
+cek defaults to `if-not-present` to avoid registry rate limits. Images are
 fetched from your local container daemon cache when available, falling back to
 the remote registry only if needed.
 
 ```text
 # Use local cache if available, pull if missing (default)
-lix inspect --pull if-not-present nginx:latest
+cek inspect --pull if-not-present nginx:latest
 
 # Always pull from registry, even if cached locally
 # Useful for checking if :latest tag has been updated
-lix inspect --pull always nginx:latest
+cek inspect --pull always nginx:latest
 
 # Only use local cache, never pull from registry
 # Useful for offline work or avoiding network calls
-lix inspect --pull never nginx:latest
+cek inspect --pull never nginx:latest
 ```
 
 Images pulled by `docker pull`, `nerdctl pull` or `podman pull` are immediately
-available to lix without additional downloads.
+available to cek without additional downloads.
 
-When using `if-not-present`, lix checks the local container daemon first. If the
+When using `if-not-present`, cek checks the local container daemon first. If the
 image exists locally, it's used immediately without any network calls. If not
-found locally, lix pulls from the remote registry.
+found locally, cek pulls from the remote registry.

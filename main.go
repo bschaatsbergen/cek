@@ -1,6 +1,6 @@
 package main
 
-import "github.com/bschaatsbergen/lix/internal/command"
+import "github.com/bschaatsbergen/cek/internal/command"
 
 func main() {
 	command.Execute()

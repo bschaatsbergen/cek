@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/bschaatsbergen/lix/internal/view"
+	"github.com/bschaatsbergen/cek/internal/view"
 	"github.com/stretchr/testify/assert"
 )
 

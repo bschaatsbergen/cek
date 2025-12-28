@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/bschaatsbergen/lix/internal/view"
+	"github.com/bschaatsbergen/cek/internal/view"
 
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"

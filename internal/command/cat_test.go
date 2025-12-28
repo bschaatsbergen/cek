@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/bschaatsbergen/lix/internal/oci"
+	"github.com/bschaatsbergen/cek/internal/oci"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

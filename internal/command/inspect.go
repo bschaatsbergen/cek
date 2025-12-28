@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/bschaatsbergen/lix/internal/oci"
+	"github.com/bschaatsbergen/cek/internal/oci"
 	"github.com/spf13/cobra"
 )
 
@@ -20,7 +20,7 @@ func NewInspectCommand(cli *CLI) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "inspect <image>",
 		Short: "Inspect an OCI image and display information",
-		Long: highlight("lix inspect alpine:latest") + "\n\n" +
+		Long: highlight("cek inspect alpine:latest") + "\n\n" +
 			"Inspect an OCI image and display information including:\n" +
 			"  - Registry location\n" +
 			"  - Image digest and metadata\n" +

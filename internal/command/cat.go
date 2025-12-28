@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/bschaatsbergen/lix/internal/oci"
+	"github.com/bschaatsbergen/cek/internal/oci"
 	"github.com/spf13/cobra"
 )
 
@@ -26,15 +26,15 @@ func NewCatCommand(cli *CLI) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "cat <image> <filepath>",
 		Short: "Show file contents from an OCI image",
-		Long: highlight("lix cat alpine:latest /etc/alpine-release") + "\n\n" +
+		Long: highlight("cek cat alpine:latest /etc/alpine-release") + "\n\n" +
 			"Show file contents from an OCI image.\n\n" +
 			"By default, shows the file as it appears in the final overlay\n" +
 			"(top layer), which is what you'd see in a running container.\n" +
 			"Use --layer to read from a specific layer.\n\n" +
 			"Examples:\n" +
-			"  lix cat alpine:latest /etc/alpine-release\n" +
-			"  lix cat --layer 2 nginx:alpine /etc/nginx/nginx.conf\n" +
-			"  lix cat ubuntu:latest /etc/os-release\n",
+			"  cek cat alpine:latest /etc/alpine-release\n" +
+			"  cek cat --layer 2 nginx:alpine /etc/nginx/nginx.conf\n" +
+			"  cek cat ubuntu:latest /etc/os-release\n",
 		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			imageRef := args[0]

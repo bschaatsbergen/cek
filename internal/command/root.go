@@ -8,8 +8,8 @@ import (
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 
-	"github.com/bschaatsbergen/lix/internal/view"
-	"github.com/bschaatsbergen/lix/version"
+	"github.com/bschaatsbergen/cek/internal/view"
+	"github.com/bschaatsbergen/cek/version"
 )
 
 var (
@@ -20,20 +20,20 @@ var (
 
 func NewRootCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use: "lix",
-		Short: color.RGB(50, 108, 229).Sprintf("lix [global options] <subcommand> [args]") + `\n` +
+		Use: "cek",
+		Short: color.RGB(50, 108, 229).Sprintf("cek [global options] <subcommand> [args]") + `\n` +
 			"List, inspect and explore OCI images and their layers",
-		Long: color.RGB(50, 108, 229).Sprintf("Usage: lix [global options] <subcommand> [args]\n") +
+		Long: color.RGB(50, 108, 229).Sprintf("Usage: cek [global options] <subcommand> [args]\n") +
 			`
-.__  .__
-|  | |__|__  ___
-|  | |  \  \/  /
-|  |_|  |>    <
-|____/__/__/\_ \
-              \/
+_________ _______________  __.
+\_   ___ \\_   _____/    |/ _|
+/    \  \/ |    __)_|      <  
+\     \____|        \    |  \ 
+ \______  /_______  /____|__ \
+        \/        \/        \/
 		` + "\n" +
 			"List, inspect and explore OCI images and their layers.\n\n" +
-			"Lix provides commands to interact with OCI container images,\n" +
+			"cek provides commands to interact with OCI container images,\n" +
 			"allowing you to inspect manifests, explore layers, examine files,\n" +
 			"and compare images.\n",
 		Version:       version.Version,
@@ -96,7 +96,7 @@ func Execute() {
 	}
 
 	logLevel := view.LogLevelSilent
-	logEnv := os.Getenv("LIX_LOG")
+	logEnv := os.Getenv("CEK_LOG")
 	switch strings.ToLower(logEnv) {
 	case "debug":
 		logLevel = view.LogLevelDebug

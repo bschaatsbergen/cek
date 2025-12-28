@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/bschaatsbergen/lix/version"
+	"github.com/bschaatsbergen/cek/version"
 )
 
 type Stream struct {

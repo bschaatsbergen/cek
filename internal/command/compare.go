@@ -8,7 +8,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/bschaatsbergen/lix/internal/oci"
+	"github.com/bschaatsbergen/cek/internal/oci"
 	"github.com/google/go-containerregistry/pkg/name"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/spf13/cobra"
@@ -30,9 +30,9 @@ func NewCompareCommand(cli *CLI) *cobra.Command {
 Shows differences in layers, size, and configuration between the two images.
 
 Examples:
-  lix compare alpine:latest alpine:3.17
-  lix compare nginx:1.25 nginx:1.24
-  lix compare myregistry.io/app:v1.0 myregistry.io/app:v2.0`,
+  cek compare alpine:latest alpine:3.17
+  cek compare nginx:1.25 nginx:1.24
+  cek compare myregistry.io/app:v1.0 myregistry.io/app:v2.0`,
 		Args: cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return RunCompare(cmd.Context(), cli, args[0], args[1], &opts)
