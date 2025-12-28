@@ -1,17 +1,18 @@
-package command
+package command_test
 
 import (
 	"bytes"
 	"testing"
 
+	"github.com/bschaatsbergen/cek/internal/command"
 	"github.com/bschaatsbergen/cek/internal/view"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestVersionCommand(t *testing.T) {
 	buf := new(bytes.Buffer)
-	cli := NewCLI(view.ViewHuman, buf, view.LogLevelSilent)
-	cmd := newVersionCommand(cli)
+	cli := command.NewCLI(view.ViewHuman, buf, view.LogLevelSilent)
+	cmd := command.NewVersionCommand(cli)
 
 	assert.Equal(t, "version", cmd.Use)
 	assert.NotEmpty(t, cmd.Short)
@@ -19,8 +20,8 @@ func TestVersionCommand(t *testing.T) {
 
 func TestVersionCommand_Execute(t *testing.T) {
 	buf := new(bytes.Buffer)
-	cli := NewCLI(view.ViewHuman, buf, view.LogLevelSilent)
-	cmd := newVersionCommand(cli)
+	cli := command.NewCLI(view.ViewHuman, buf, view.LogLevelSilent)
+	cmd := command.NewVersionCommand(cli)
 
 	err := cmd.Execute()
 	assert.NoError(t, err)
@@ -29,8 +30,8 @@ func TestVersionCommand_Execute(t *testing.T) {
 
 func TestVersionCommand_WithPath(t *testing.T) {
 	buf := new(bytes.Buffer)
-	cli := NewCLI(view.ViewHuman, buf, view.LogLevelSilent)
-	cmd := newVersionCommand(cli)
+	cli := command.NewCLI(view.ViewHuman, buf, view.LogLevelSilent)
+	cmd := command.NewVersionCommand(cli)
 	cmd.SetArgs([]string{"."})
 
 	err := cmd.Execute()
@@ -40,8 +41,8 @@ func TestVersionCommand_WithPath(t *testing.T) {
 
 func TestVersionCommand_TooManyArgs(t *testing.T) {
 	buf := new(bytes.Buffer)
-	cli := NewCLI(view.ViewHuman, buf, view.LogLevelSilent)
-	cmd := newVersionCommand(cli)
+	cli := command.NewCLI(view.ViewHuman, buf, view.LogLevelSilent)
+	cmd := command.NewVersionCommand(cli)
 	cmd.SetArgs([]string{"arg1", "arg2"})
 
 	err := cmd.Execute()

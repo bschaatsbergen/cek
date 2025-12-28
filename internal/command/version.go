@@ -9,7 +9,7 @@ type VersionOptions struct {
 	Path string
 }
 
-func newVersionCommand(cli *CLI) *cobra.Command {
+func NewVersionCommand(cli *CLI) *cobra.Command {
 	opts := VersionOptions{
 		Path: ".", // Default to current directory
 	}

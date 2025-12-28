@@ -128,7 +128,7 @@ func Execute() {
 // AddCommands registers all subcommands to the root command.
 func AddCommands(root *cobra.Command, cli *CLI) {
 	root.AddCommand(
-		newVersionCommand(cli),
+		NewVersionCommand(cli),
 		NewInspectCommand(cli),
 		NewCatCommand(cli),
 		NewLsCommand(cli),
