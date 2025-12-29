@@ -220,12 +220,12 @@ func printTreeSimple(cli *CLI, files []view.FileInfo, rootPath string, opts *Tre
 	if rootName == "/" || rootName == "" {
 		rootName = "."
 	}
-	fmt.Fprintf(cli.Writer, "%s\n", rootName)
+	_, _ = fmt.Fprintf(cli.Writer, "%s\n", rootName)
 
 	printTreeDir(cli, dirMap, rootPath, "", opts, 0)
 }
 
-func printTreeDir(cli *CLI, dirMap map[string][]dirEntry, dirPath string, prefix string, opts *TreeOptions, currentDepth int) {
+func printTreeDir(cli *CLI, dirMap map[string][]dirEntry, dirPath, prefix string, opts *TreeOptions, currentDepth int) {
 	if opts.Level > 0 && currentDepth > opts.Level {
 		return
 	}
@@ -245,14 +245,14 @@ func printTreeDir(cli *CLI, dirMap map[string][]dirEntry, dirPath string, prefix
 
 		name := entry.name
 		if entry.isDir {
-			name = name + "/"
+			name += "/"
 		}
 
 		if opts.Human {
 			sizeStr := oci.FormatBytes(entry.size)
-			fmt.Fprintf(cli.Writer, "%s%s[%5s]  %s\n", prefix, connector, sizeStr, name)
+			_, _ = fmt.Fprintf(cli.Writer, "%s%s[%5s]  %s\n", prefix, connector, sizeStr, name)
 		} else {
-			fmt.Fprintf(cli.Writer, "%s%s%s\n", prefix, connector, name)
+			_, _ = fmt.Fprintf(cli.Writer, "%s%s%s\n", prefix, connector, name)
 		}
 
 		if entry.isDir {
