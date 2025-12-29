@@ -70,8 +70,9 @@ func RunCompare(ctx context.Context, cli *CLI, image1Ref, image2Ref string, opts
 	logger.Info("Comparing images", "image1", image1Ref, "image2", image2Ref)
 
 	fetchOpts := &oci.FetchOptions{
-		Platform:   opts.Platform,
-		PullPolicy: oci.PullPolicy(opts.Pull),
+		Platform:        opts.Platform,
+		PullPolicy:      oci.PullPolicy(opts.Pull),
+		DisableProgress: cli.DisableProgress,
 	}
 
 	img1, _, err := oci.FetchImage(ctx, image1Ref, fetchOpts)
@@ -132,40 +133,47 @@ func RunCompare(ctx context.Context, cli *CLI, image1Ref, image2Ref string, opts
 		layerDigests2[digest.String()] = true
 	}
 
-	files1, err := extractFileListFromLayers(layers1, layerDigests2)
-	if err != nil {
-		return fmt.Errorf("failed to extract files from first image: %w", err)
-	}
+	data, err := RunWithSpinner(cli, "Comparing images...", func() (*view.CompareData, error) {
+		files1, err := extractFileListFromLayers(layers1, layerDigests2)
+		if err != nil {
+			return nil, fmt.Errorf("failed to extract files from first image: %w", err)
+		}
 
-	files2, err := extractFileListFromLayers(layers2, layerDigests1)
-	if err != nil {
-		return fmt.Errorf("failed to extract files from second image: %w", err)
-	}
+		files2, err := extractFileListFromLayers(layers2, layerDigests1)
+		if err != nil {
+			return nil, fmt.Errorf("failed to extract files from second image: %w", err)
+		}
 
-	size1, err := getImageSize(img1)
-	if err != nil {
-		return fmt.Errorf("failed to get size for first image: %w", err)
-	}
+		size1, err := getImageSize(img1)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get size for first image: %w", err)
+		}
 
-	size2, err := getImageSize(img2)
-	if err != nil {
-		return fmt.Errorf("failed to get size for second image: %w", err)
-	}
+		size2, err := getImageSize(img2)
+		if err != nil {
+			return nil, fmt.Errorf("failed to get size for second image: %w", err)
+		}
 
-	added, removed, modified := compareFiles(files1, files2)
+		added, removed, modified := compareFiles(files1, files2)
 
-	return cli.Compare().Render(&view.CompareData{
-		Image1Ref:    image1Ref,
-		Image2Ref:    image2Ref,
-		Image1Layers: len(layers1),
-		Image2Layers: len(layers2),
-		Image1Size:   size1,
-		Image2Size:   size2,
-		Added:        added,
-		Removed:      removed,
-		Modified:     modified,
-		Identical:    false,
+		return &view.CompareData{
+			Image1Ref:    image1Ref,
+			Image2Ref:    image2Ref,
+			Image1Layers: len(layers1),
+			Image2Layers: len(layers2),
+			Image1Size:   size1,
+			Image2Size:   size2,
+			Added:        added,
+			Removed:      removed,
+			Modified:     modified,
+			Identical:    false,
+		}, nil
 	})
+	if err != nil {
+		return err
+	}
+
+	return cli.Compare().Render(data)
 }
 
 // extractFileListFromLayers returns file paths from layers not in otherLayerDigests.
