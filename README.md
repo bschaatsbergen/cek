@@ -109,19 +109,6 @@ diff <(cek cat nginx:1.25 /etc/nginx/nginx.conf) \
 The `cat` command searches layers top-down to find the final file state after
 all overlays, just like in a running container.
 
-### Compare two image tags
-
-Compare images from the same repository to see what changed between versions.
-Only files from unique layers are analyzed, making comparisons fast even for
-large images with shared base layers.
-
-```bash
-cek compare alpine:3.19 alpine:3.18
-```
-
-The comparison skips shared base layers automatically, reducing I/O for images
-with common ancestry.
-
 ### List available tags
 
 List all tags in a repository from the remote registry, allowing you to find

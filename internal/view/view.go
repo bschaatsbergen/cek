@@ -12,7 +12,6 @@ type Viewer interface {
 	Ls() LsView
 	Export() ExportView
 	Tags() TagsView
-	Compare() CompareView
 	Logger() Logger
 }
 
@@ -65,10 +64,6 @@ func (h *HumanView) Tags() TagsView {
 	return newTagsHumanView(h)
 }
 
-func (h *HumanView) Compare() CompareView {
-	return newCompareHumanView(h)
-}
-
 func (h *HumanView) Logger() Logger {
 	return h.logger
 }
@@ -109,10 +104,6 @@ func (j *JSONView) Export() ExportView {
 
 func (j *JSONView) Tags() TagsView {
 	return newTagsJSONView(j)
-}
-
-func (j *JSONView) Compare() CompareView {
-	return newCompareJSONView(j)
 }
 
 func (j *JSONView) Logger() Logger {
