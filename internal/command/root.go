@@ -132,7 +132,6 @@ func AddCommands(root *cobra.Command, cli *CLI) {
 		NewInspectCommand(cli),
 		NewCatCommand(cli),
 		NewLsCommand(cli),
-		NewCompareCommand(cli),
 		NewTagsCommand(cli),
 		NewExportCommand(cli),
 		NewTreeCommand(cli),

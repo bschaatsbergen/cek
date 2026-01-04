@@ -32,31 +32,6 @@ go build -o cek .
 
 ## Usage
 
-### Inspect image metadata
-
-View image details including digest, creation time, architecture, total size,
-and individual layer information.
-
-```bash
-cek inspect nginx
-Image: nginx
-Registry: index.docker.io
-Digest: sha256:ec0ee8695f2f71addca9b40f27df0fdfbde460485a2b68b834e18ea856542f1e
-Created: 2025-12-09T22:50:18Z
-OS/Arch: linux/arm64
-Size: 55.6 MB
-
-Layers:
-#  Digest                                                                   Size
-1  sha256:f626fba1463b32b20f78d29b52dcf15be927dbb5372a9ba6a5f97aad47ae220b  28.7 MB
-2  sha256:89d0a1112522e6e01ed53f0b339cb1a121ea7e19cfebdb325763bf5045ba7a47  26.8 MB
-3  sha256:1b7c70849006971147c73371c868b789998c7220ba42e777d2d7e5894ac26e54  627 B
-4  sha256:b8b0307e95c93307d99d02d3bdc61c3ed0b8d26685bb9bafc6c62d4170a2363e  954 B
-5  sha256:fe1d23b41cb3b150a19a697809a56f455f1dac2bf8b60c8a1d0427965126aaf9  403 B
-6  sha256:fda1d961e2b70f435ee701baaa260a569d7ea2eacd9f6dba8ac0320dc9b7d9fe  1.2 KB
-7  sha256:10dbff0ec650f05c6cdcb80c2e7cc93db11c265b775a7a54e1dd48e4cbcebbbc  1.4 KB
-```
-
 ### List files in an image
 
 By default, `cek ls` shows the merged overlay filesystem, which is what you see
@@ -163,6 +138,31 @@ cek tree nginx:latest -L 1
 
 # Inspect the /usr/local/bin folder of a specific layer
 cek tree --layer 4 python:3.12-slim /usr/local/bin
+```
+
+### Inspect image metadata
+
+View image details including digest, creation time, architecture, total size,
+and individual layer information.
+
+```bash
+cek inspect nginx
+Image: nginx
+Registry: index.docker.io
+Digest: sha256:ec0ee8695f2f71addca9b40f27df0fdfbde460485a2b68b834e18ea856542f1e
+Created: 2025-12-09T22:50:18Z
+OS/Arch: linux/arm64
+Size: 55.6 MB
+
+Layers:
+#  Digest                                                                   Size
+1  sha256:f626fba1463b32b20f78d29b52dcf15be927dbb5372a9ba6a5f97aad47ae220b  28.7 MB
+2  sha256:89d0a1112522e6e01ed53f0b339cb1a121ea7e19cfebdb325763bf5045ba7a47  26.8 MB
+3  sha256:1b7c70849006971147c73371c868b789998c7220ba42e777d2d7e5894ac26e54  627 B
+4  sha256:b8b0307e95c93307d99d02d3bdc61c3ed0b8d26685bb9bafc6c62d4170a2363e  954 B
+5  sha256:fe1d23b41cb3b150a19a697809a56f455f1dac2bf8b60c8a1d0427965126aaf9  403 B
+6  sha256:fda1d961e2b70f435ee701baaa260a569d7ea2eacd9f6dba8ac0320dc9b7d9fe  1.2 KB
+7  sha256:10dbff0ec650f05c6cdcb80c2e7cc93db11c265b775a7a54e1dd48e4cbcebbbc  1.4 KB
 ```
 
 ## Container Daemon Support
