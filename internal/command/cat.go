@@ -63,8 +63,9 @@ func RunCat(ctx context.Context, cli *CLI, imageRef, filePath string, opts *CatO
 	}
 
 	fetchOpts := &oci.FetchOptions{
-		Platform:   opts.Platform,
-		PullPolicy: oci.PullPolicy(opts.Pull),
+		Platform:        opts.Platform,
+		PullPolicy:      oci.PullPolicy(opts.Pull),
+		DisableProgress: cli.DisableProgress,
 	}
 	img, _, err := oci.FetchImage(ctx, imageRef, fetchOpts)
 	if err != nil {
@@ -91,21 +92,25 @@ func RunCat(ctx context.Context, cli *CLI, imageRef, filePath string, opts *CatO
 		}
 	}
 
-	for _, layerIdx := range layersToSearch {
-		layer := layers[layerIdx]
-		content, found, err := extractFileFromLayer(layer, filePath)
-		if err != nil {
-			return fmt.Errorf("failed to read layer %d: %w", layerIdx+1, err)
-		}
+	data, err := RunWithSpinner(cli, "Reading...", func() (*view.CatData, error) {
+		for _, layerIdx := range layersToSearch {
+			layer := layers[layerIdx]
+			content, found, err := extractFileFromLayer(layer, filePath)
+			if err != nil {
+				return nil, fmt.Errorf("failed to read layer %d: %w", layerIdx+1, err)
+			}
 
-		if found {
-			return cli.Cat().Render(&view.CatData{
-				Content: content,
-			})
+			if found {
+				return &view.CatData{Content: content}, nil
+			}
 		}
+		return nil, fmt.Errorf("file not found: %s", filePath)
+	})
+	if err != nil {
+		return err
 	}
 
-	return fmt.Errorf("file not found: %s", filePath)
+	return cli.Cat().Render(data)
 }
 
 // extractFileFromLayer returns file contents if found in the layer's tar archive.
