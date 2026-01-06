@@ -13,10 +13,10 @@ import (
 )
 
 var (
-	jsonFlag            bool
-	debugFlag           bool
-	disableProgressFlag bool
-	rootCmd             *cobra.Command
+	jsonFlag                     bool
+	debugFlag                    bool
+	disableProgressIndicatorFlag bool
+	rootCmd                      *cobra.Command
 )
 
 func NewRootCommand() *cobra.Command {
@@ -50,7 +50,7 @@ _________ _______________  __.
 	cmd.CompletionOptions.DisableDefaultCmd = true
 	cmd.PersistentFlags().BoolVar(&jsonFlag, "json", false, "Output in JSON format")
 	cmd.PersistentFlags().BoolVar(&debugFlag, "debug", false, "Set log level to debug")
-	cmd.PersistentFlags().BoolVar(&disableProgressFlag, "disable-progress", false, "Disable progress indicators")
+	cmd.PersistentFlags().BoolVar(&disableProgressIndicatorFlag, "disable-progress-indicator", false, "Disables the progress indicator during image pulling or long-running operations")
 	return cmd
 }
 
@@ -114,7 +114,7 @@ func Execute() {
 	// Create a new CLI instance, which is a global context that each command
 	// can use to access, useful for view rendering, etc.
 	cli := NewCLI(viewType, os.Stdout, logLevel)
-	cli.DisableProgress = disableProgressFlag
+	cli.DisableProgress = disableProgressIndicatorFlag
 
 	// Add all subcommands to the root command
 	AddCommands(rootCmd, cli)

@@ -93,7 +93,6 @@ func RunCat(ctx context.Context, cli *CLI, imageRef, filePath string, opts *CatO
 	}
 
 	data, err := RunWithSpinner(cli, "Reading...", func() (*view.CatData, error) {
-		// search layers for file
 		for _, layerIdx := range layersToSearch {
 			layer := layers[layerIdx]
 			content, found, err := extractFileFromLayer(layer, filePath)
