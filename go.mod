@@ -3,7 +3,7 @@ module github.com/bschaatsbergen/cek
 go 1.24.0
 
 require (
-	github.com/bmatcuk/doublestar/v4 v4.9.2
+	github.com/bmatcuk/doublestar/v4 v4.10.0
 	github.com/fatih/color v1.18.0
 	github.com/google/go-containerregistry v0.20.7
 	github.com/lmittmann/tint v1.1.2
