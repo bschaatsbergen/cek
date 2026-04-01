@@ -6,7 +6,7 @@ require (
 	github.com/bmatcuk/doublestar/v4 v4.9.2
 	github.com/fatih/color v1.18.0
 	github.com/google/go-containerregistry v0.20.7
-	github.com/lmittmann/tint v1.1.2
+	github.com/lmittmann/tint v1.1.3
 	github.com/spf13/cobra v1.10.2
 	github.com/stretchr/testify v1.11.1
 )
