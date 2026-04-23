@@ -4,8 +4,9 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/bschaatsbergen/cek/internal/spinner"
 	"github.com/google/go-containerregistry/pkg/name"
-	v1 "github.com/google/go-containerregistry/pkg/v1"
+	"github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/daemon"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
 )
@@ -19,8 +20,9 @@ const (
 )
 
 type FetchOptions struct {
-	Platform   string
-	PullPolicy PullPolicy
+	Platform        string
+	PullPolicy      PullPolicy
+	DisableProgress bool
 }
 
 // FetchImage retrieves an OCI image from either the local daemon or remote registry
@@ -64,6 +66,12 @@ func fetchFromDaemon(ref name.Reference, opts *FetchOptions) (v1.Image, error) {
 }
 
 func fetchFromRemote(ctx context.Context, ref name.Reference, opts *FetchOptions) (v1.Image, name.Reference, error) {
+	if opts != nil && !opts.DisableProgress {
+		s := spinner.New(fmt.Sprintf("Pulling image: %s...", ref.String()))
+		s.Start()
+		defer s.Stop()
+	}
+
 	remoteOpts := []remote.Option{
 		remote.WithContext(ctx),
 	}
