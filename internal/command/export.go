@@ -54,8 +54,9 @@ func RunExport(ctx context.Context, cli *CLI, imageRef string, opts *ExportOptio
 	logger.Debug("Exporting image", "image", imageRef, "output", opts.Output)
 
 	fetchOpts := &oci.FetchOptions{
-		Platform:   opts.Platform,
-		PullPolicy: oci.PullPolicy(opts.Pull),
+		Platform:        opts.Platform,
+		PullPolicy:      oci.PullPolicy(opts.Pull),
+		DisableProgress: cli.DisableProgress,
 	}
 	img, ref, err := oci.FetchImage(ctx, imageRef, fetchOpts)
 	if err != nil {
@@ -64,14 +65,17 @@ func RunExport(ctx context.Context, cli *CLI, imageRef string, opts *ExportOptio
 
 	logger.Debug("Writing tarball", "path", opts.Output)
 
-	if err := tarball.WriteToFile(opts.Output, ref, img); err != nil {
-		return fmt.Errorf("failed to write tarball: %w", err)
+	data, err := RunWithSpinner(cli, "Exporting...", func() (*view.ExportData, error) {
+		if err := tarball.WriteToFile(opts.Output, ref, img); err != nil {
+			return nil, fmt.Errorf("failed to write tarball: %w", err)
+		}
+		return &view.ExportData{ImageRef: imageRef, OutputPath: opts.Output}, nil
+	})
+	if err != nil {
+		return err
 	}
 
 	logger.Debug("Export complete")
 
-	return cli.Export().Render(&view.ExportData{
-		ImageRef:   imageRef,
-		OutputPath: opts.Output,
-	})
+	return cli.Export().Render(data)
 }
