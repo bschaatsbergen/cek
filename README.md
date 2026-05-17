@@ -77,14 +77,14 @@ inspection, diffing, or processing.
 cek cat nginx:latest /etc/nginx/nginx.conf
 
 # Read from a specific layer
-cek cat --layer 2 nginx:latest /etc/os-release
+cek cat --layer 2 nginx:latest /etc/nginx/nginx.conf
 
 # Pipe to other tools
-cek cat alpine:latest /etc/os-release | grep VERSION_ID
+cek cat alpine:latest /usr/lib/os-release | grep VERSION_ID
 
 # Compare configuration between image versions
-diff <(cek cat nginx:1.25 /etc/nginx/nginx.conf) \
-     <(cek cat nginx:1.24 /etc/nginx/nginx.conf)
+diff <(cek cat nginx:1.28 /etc/nginx/nginx.conf) \
+     <(cek cat nginx:1.26 /etc/nginx/nginx.conf)
 ```
 
 The `cat` command searches layers top-down to find the final file state after
