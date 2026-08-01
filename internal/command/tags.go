@@ -61,25 +61,29 @@ func RunTags(ctx context.Context, cli *CLI, imageRef string, opts *TagsOptions) 
 		remote.WithContext(ctx),
 	}
 
-	tags, err := remote.List(repo, remoteOpts...)
-	if err != nil {
-		return fmt.Errorf("failed to list tags: %w", err)
-	}
+	data, err := RunWithSpinner(cli, "Listing tags...", func() (*view.TagsData, error) {
+		tags, err := remote.List(repo, remoteOpts...)
+		if err != nil {
+			return nil, fmt.Errorf("failed to list tags: %w", err)
+		}
 
-	// Reverse to display newest tags first.
-	// Users typically care most about the latest versions.
-	for i, j := 0, len(tags)-1; i < j; i, j = i+1, j-1 {
-		tags[i], tags[j] = tags[j], tags[i]
-	}
+		// Reverse to display newest tags first.
+		// Users typically care most about the latest versions.
+		for i, j := 0, len(tags)-1; i < j; i, j = i+1, j-1 {
+			tags[i], tags[j] = tags[j], tags[i]
+		}
 
-	if opts.Limit > 0 && opts.Limit < len(tags) {
-		tags = tags[:opts.Limit]
-	}
+		if opts.Limit > 0 && opts.Limit < len(tags) {
+			tags = tags[:opts.Limit]
+		}
 
-	logger.Debug("Listed tags", "count", len(tags))
+		logger.Debug("Listed tags", "count", len(tags))
 
-	return cli.Tags().Render(&view.TagsData{
-		Repository: repo.String(),
-		Tags:       tags,
+		return &view.TagsData{Repository: repo.String(), Tags: tags}, nil
 	})
+	if err != nil {
+		return err
+	}
+
+	return cli.Tags().Render(data)
 }

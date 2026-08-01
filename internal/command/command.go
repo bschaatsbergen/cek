@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/bschaatsbergen/cek/internal/spinner"
 	"github.com/bschaatsbergen/cek/internal/view"
 
 	"github.com/fatih/color"
@@ -16,9 +17,10 @@ import (
 type CLI struct {
 	view.Viewer
 	*view.Stream
-	Endpoint    string
-	Context     string
-	ContextFlag string
+	Endpoint        string
+	Context         string
+	ContextFlag     string
+	DisableProgress bool
 }
 
 // highlight applies a blue color to the given format and arguments.
@@ -83,4 +85,15 @@ func MaxArgs(number int) cobra.PositionalArgs {
 		}
 		return fmt.Errorf("expected at most %d arguments, got %d", number, len(args))
 	}
+}
+
+// RunWithSpinner runs a function that returns a generic result while showing a spinner (when enabled).
+// It guarantees the spinner is stopped and stderr cleaned before returning so the caller can safely render to stdout.
+func RunWithSpinner[T any](cli *CLI, message string, fn func() (*T, error)) (*T, error) {
+	if !cli.DisableProgress {
+		s := spinner.New(message)
+		s.Start()
+		defer s.Stop()
+	}
+	return fn()
 }
