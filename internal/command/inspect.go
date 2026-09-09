@@ -53,8 +53,9 @@ func RunInspect(ctx context.Context, cli *CLI, imageRef string, opts *InspectOpt
 	logger.Debug("Inspecting image", "image", imageRef)
 
 	fetchOpts := &oci.FetchOptions{
-		Platform:   opts.Platform,
-		PullPolicy: oci.PullPolicy(opts.Pull),
+		Platform:        opts.Platform,
+		PullPolicy:      oci.PullPolicy(opts.Pull),
+		DisableProgress: cli.DisableProgress,
 	}
 	img, ref, err := oci.FetchImage(ctx, imageRef, fetchOpts)
 	if err != nil {
@@ -81,35 +82,42 @@ func RunInspect(ctx context.Context, cli *CLI, imageRef string, opts *InspectOpt
 		return fmt.Errorf("failed to get layers: %w", err)
 	}
 
-	var totalSize int64
-	layerDataList := make([]view.LayerData, 0, len(layers))
-	for i, layer := range layers {
-		layerDigest, err := layer.Digest()
-		if err != nil {
-			return fmt.Errorf("failed to get layer digest: %w", err)
+	data, err := RunWithSpinner(cli, "Inspecting...", func() (*view.InspectData, error) {
+		var totalSize int64
+		layerDataList := make([]view.LayerData, 0, len(layers))
+		for i, layer := range layers {
+			layerDigest, err := layer.Digest()
+			if err != nil {
+				return nil, fmt.Errorf("failed to get layer digest: %w", err)
+			}
+
+			size, err := layer.Size()
+			if err != nil {
+				return nil, fmt.Errorf("failed to get layer size: %w", err)
+			}
+			totalSize += size
+
+			layerDataList = append(layerDataList, view.LayerData{
+				Index:  i + 1,
+				Digest: layerDigest,
+				Size:   size,
+			})
 		}
 
-		size, err := layer.Size()
-		if err != nil {
-			return fmt.Errorf("failed to get layer size: %w", err)
-		}
-		totalSize += size
-
-		layerDataList = append(layerDataList, view.LayerData{
-			Index:  i + 1,
-			Digest: layerDigest,
-			Size:   size,
-		})
+		return &view.InspectData{
+			ImageRef:     imageRef,
+			Registry:     ref.Context().RegistryStr(),
+			Digest:       digest,
+			Created:      configFile.Created.Time,
+			OS:           configFile.OS,
+			Architecture: configFile.Architecture,
+			TotalSize:    totalSize,
+			Layers:       layerDataList,
+		}, nil
+	})
+	if err != nil {
+		return err
 	}
 
-	return cli.Inspect().Render(&view.InspectData{
-		ImageRef:     imageRef,
-		Registry:     ref.Context().RegistryStr(),
-		Digest:       digest,
-		Created:      configFile.Created.Time,
-		OS:           configFile.OS,
-		Architecture: configFile.Architecture,
-		TotalSize:    totalSize,
-		Layers:       layerDataList,
-	})
+	return cli.Inspect().Render(data)
 }

@@ -74,8 +74,9 @@ func RunLs(ctx context.Context, cli *CLI, imageRef string, opts *LsOptions) erro
 	logger.Debug("Listing files in image", "image", imageRef)
 
 	fetchOpts := &oci.FetchOptions{
-		Platform:   opts.Platform,
-		PullPolicy: oci.PullPolicy(opts.Pull),
+		Platform:        opts.Platform,
+		PullPolicy:      oci.PullPolicy(opts.Pull),
+		DisableProgress: cli.DisableProgress,
 	}
 	img, _, err := oci.FetchImage(ctx, imageRef, fetchOpts)
 	if err != nil {
@@ -89,41 +90,44 @@ func RunLs(ctx context.Context, cli *CLI, imageRef string, opts *LsOptions) erro
 
 	logger.Debug("Found layers", "count", len(layers))
 
-	var files []view.FileInfo
+	data, err := RunWithSpinner(cli, "Listing files...", func() (*view.LsData, error) {
+		var files []view.FileInfo
 
-	if opts.Layer > 0 {
-		if opts.Layer > len(layers) {
-			return fmt.Errorf("layer %d does not exist (image has %d layers)", opts.Layer, len(layers))
+		if opts.Layer > 0 {
+			if opts.Layer > len(layers) {
+				return nil, fmt.Errorf("layer %d does not exist (image has %d layers)", opts.Layer, len(layers))
+			}
+			layerIdx := opts.Layer - 1
+			layer := layers[layerIdx]
+
+			var err error
+			files, err = extractFilesFromLayer(layer)
+			if err != nil {
+				return nil, fmt.Errorf("failed to extract files from layer %d: %w", layerIdx+1, err)
+			}
+		} else {
+			var err error
+			files, err = extractMergedFilesystem(layers)
+			if err != nil {
+				return nil, fmt.Errorf("failed to extract merged filesystem: %w", err)
+			}
 		}
-		layerIdx := opts.Layer - 1
-		layer := layers[layerIdx]
 
-		var err error
-		files, err = extractFilesFromLayer(layer)
-		if err != nil {
-			return fmt.Errorf("failed to extract files from layer %d: %w", layerIdx+1, err)
+		if opts.Path != "" {
+			files = filterByPath(files, opts.Path)
 		}
-	} else {
-		var err error
-		files, err = extractMergedFilesystem(layers)
-		if err != nil {
-			return fmt.Errorf("failed to extract merged filesystem: %w", err)
+
+		if opts.Filter != "" {
+			files = filterFiles(files, opts.Filter)
 		}
-	}
 
-	if opts.Path != "" {
-		files = filterByPath(files, opts.Path)
-	}
-
-	if opts.Filter != "" {
-		files = filterFiles(files, opts.Filter)
-	}
-
-	return cli.Ls().Render(&view.LsData{
-		Files:  files,
-		Path:   opts.Path,
-		Filter: opts.Filter,
+		return &view.LsData{Files: files, Path: opts.Path, Filter: opts.Filter}, nil
 	})
+	if err != nil {
+		return err
+	}
+
+	return cli.Ls().Render(data)
 }
 
 func extractFilesFromLayer(layer interface {
