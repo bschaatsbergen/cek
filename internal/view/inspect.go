@@ -37,6 +37,11 @@ type InspectView interface {
 	Render(data *InspectData) error
 }
 
+// maxAnnotationValueWidth caps annotation values in the human view. Values
+// such as wrapped keys run to over a thousand characters and would drown the
+// rest of the output; --json carries them in full.
+const maxAnnotationValueWidth = 60
+
 // Human view implementation
 type inspectHumanView struct {
 	*HumanView
@@ -79,7 +84,7 @@ func (v *inspectHumanView) Render(data *InspectData) error {
 
 	for _, layer := range data.Layers {
 		for _, key := range slices.Sorted(maps.Keys(layer.Annotations)) {
-			_, _ = fmt.Fprintf(w, "%d\t%s\t%s\n", layer.Index, key, layer.Annotations[key])
+			_, _ = fmt.Fprintf(w, "%d\t%s\t%s\n", layer.Index, key, truncate(layer.Annotations[key], maxAnnotationValueWidth))
 		}
 	}
 
@@ -88,6 +93,15 @@ func (v *inspectHumanView) Render(data *InspectData) error {
 	}
 
 	return nil
+}
+
+// truncate cuts s to width runes and marks the cut with an ellipsis.
+func truncate(s string, width int) string {
+	runes := []rune(s)
+	if len(runes) <= width {
+		return s
+	}
+	return string(runes[:width]) + "..."
 }
 
 func hasLayerAnnotations(layers []LayerData) bool {

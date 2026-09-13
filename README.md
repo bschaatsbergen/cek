@@ -173,8 +173,9 @@ Layers:
 7  sha256:f340c1b7c1d6861ed76e1adc2630b145227b071b54259bc97e318297cb4b8156  1.4 KB   application/vnd.oci.image.layer.v1.tar+gzip
 ```
 
-Use `--json` to get the same data, including per-layer `mediaType` and
-`annotations`, as structured output.
+Long annotation values are cut short in the table. Use `--json` to get the
+same data, including per-layer `mediaType` and full `annotations`, as
+structured output.
 
 ### Write a raw layer blob
 

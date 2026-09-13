@@ -121,3 +121,34 @@ func TestInspectJSONView_RendersMediaTypeAndAnnotations(t *testing.T) {
 		"org.opencontainers.image.enc.pubopts":  "eyJjaXBoZXIiOiJBRVNfMjU2X0NUUl9ITUFDX1NIQTI1NiJ9",
 	}, output.Layers[1].Annotations)
 }
+
+func TestInspectHumanView_TruncatesLongAnnotationValues(t *testing.T) {
+	long := strings.Repeat("0123456789", 10)
+	data := inspectFixture()
+	data.Layers[1].Annotations = map[string]string{
+		"org.opencontainers.image.enc.keys.jwe": long,
+		"org.opencontainers.image.source":       "https://github.com/bschaatsbergen/cek",
+	}
+
+	buf := new(bytes.Buffer)
+	hv := view.NewHumanView(view.NewStream(buf), view.LogLevelSilent)
+
+	require.NoError(t, hv.Inspect().Render(data))
+
+	output := buf.String()
+	assert.Contains(t, output, long[:60]+"...")
+	assert.NotContains(t, output, long)
+	assert.Contains(t, output, "https://github.com/bschaatsbergen/cek\n")
+}
+
+func TestInspectJSONView_KeepsFullAnnotationValues(t *testing.T) {
+	long := strings.Repeat("0123456789", 10)
+	data := inspectFixture()
+	data.Layers[1].Annotations = map[string]string{"org.opencontainers.image.enc.keys.jwe": long}
+
+	buf := new(bytes.Buffer)
+	jv := view.NewJSONView(view.NewStream(buf), view.LogLevelSilent)
+
+	require.NoError(t, jv.Inspect().Render(data))
+	assert.Contains(t, buf.String(), long)
+}
