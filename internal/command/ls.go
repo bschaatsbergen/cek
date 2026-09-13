@@ -1,17 +1,13 @@
 package command
 
 import (
-	"archive/tar"
 	"context"
 	"fmt"
-	"io"
-	"path/filepath"
 	"strings"
 
 	"github.com/bmatcuk/doublestar/v4"
 	"github.com/bschaatsbergen/cek/internal/oci"
 	"github.com/bschaatsbergen/cek/internal/view"
-	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/spf13/cobra"
 )
 
@@ -83,26 +79,9 @@ func RunLs(ctx context.Context, cli *CLI, imageRef string, opts *LsOptions) erro
 
 	logger.Debug("Found layers", "count", len(layers))
 
-	var files []view.FileInfo
-
-	if opts.Layer > 0 {
-		if opts.Layer > len(layers) {
-			return fmt.Errorf("layer %d does not exist (image has %d layers)", opts.Layer, len(layers))
-		}
-		layerIdx := opts.Layer - 1
-		layer := layers[layerIdx]
-
-		var err error
-		files, err = extractFilesFromLayer(layer)
-		if err != nil {
-			return fmt.Errorf("failed to extract files from layer %d: %w", layerIdx+1, err)
-		}
-	} else {
-		var err error
-		files, err = extractMergedFilesystem(layers)
-		if err != nil {
-			return fmt.Errorf("failed to extract merged filesystem: %w", err)
-		}
+	files, err := listFiles(layers, opts.Layer)
+	if err != nil {
+		return err
 	}
 
 	if opts.Path != "" {
@@ -118,136 +97,6 @@ func RunLs(ctx context.Context, cli *CLI, imageRef string, opts *LsOptions) erro
 		Path:   opts.Path,
 		Filter: opts.Filter,
 	})
-}
-
-func extractFilesFromLayer(layer interface {
-	Uncompressed() (io.ReadCloser, error)
-}) ([]view.FileInfo, error) {
-	rc, err := layer.Uncompressed()
-	if err != nil {
-		return nil, fmt.Errorf("failed to get uncompressed layer: %w", err)
-	}
-	defer func() {
-		_ = rc.Close()
-	}()
-
-	var files []view.FileInfo
-	tr := tar.NewReader(rc)
-
-	for {
-		header, err := tr.Next()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return nil, fmt.Errorf("failed to read tar header: %w", err)
-		}
-
-		if strings.HasPrefix(filepath.Base(header.Name), ".wh.") {
-			continue
-		}
-
-		modeStr := formatFileMode(header.Typeflag, header.Mode)
-
-		files = append(files, view.FileInfo{
-			Mode: modeStr,
-			Size: header.Size,
-			Path: "/" + strings.TrimPrefix(header.Name, "/"),
-		})
-	}
-
-	return files, nil
-}
-
-// extractMergedFilesystem builds the final overlay filesystem state by processing
-// all layers bottom-up. Later layers override files from earlier layers.
-func extractMergedFilesystem(layers []v1.Layer) ([]view.FileInfo, error) {
-	fileMap := make(map[string]view.FileInfo)
-
-	for _, layer := range layers {
-		rc, err := layer.Uncompressed()
-		if err != nil {
-			return nil, fmt.Errorf("failed to get uncompressed layer: %w", err)
-		}
-
-		tr := tar.NewReader(rc)
-		for {
-			header, err := tr.Next()
-			if err == io.EOF {
-				break
-			}
-			if err != nil {
-				_ = rc.Close()
-				return nil, fmt.Errorf("failed to read tar header: %w", err)
-			}
-
-			path := "/" + strings.TrimPrefix(header.Name, "/")
-
-			// Whiteout files remove entries from the overlay.
-			if strings.HasPrefix(filepath.Base(header.Name), ".wh.") {
-				delete(fileMap, path)
-				continue
-			}
-
-			modeStr := formatFileMode(header.Typeflag, header.Mode)
-			fileMap[path] = view.FileInfo{
-				Mode: modeStr,
-				Size: header.Size,
-				Path: path,
-			}
-		}
-		_ = rc.Close()
-	}
-
-	files := make([]view.FileInfo, 0, len(fileMap))
-	for _, file := range fileMap {
-		files = append(files, file)
-	}
-
-	return files, nil
-}
-
-func formatFileMode(typeflag byte, mode int64) string {
-	var typeChar byte
-	switch typeflag {
-	case tar.TypeDir:
-		typeChar = 'd'
-	case tar.TypeSymlink:
-		typeChar = 'l'
-	case tar.TypeBlock:
-		typeChar = 'b'
-	case tar.TypeChar:
-		typeChar = 'c'
-	case tar.TypeFifo:
-		typeChar = 'p'
-	default:
-		typeChar = '-'
-	}
-
-	modeStr := fmt.Sprintf("%c%s%s%s",
-		typeChar,
-		formatPermission(mode>>6&7),
-		formatPermission(mode>>3&7),
-		formatPermission(mode&7),
-	)
-
-	return modeStr
-}
-
-func formatPermission(perm int64) string {
-	r := "-"
-	w := "-"
-	x := "-"
-	if perm&4 != 0 {
-		r = "r"
-	}
-	if perm&2 != 0 {
-		w = "w"
-	}
-	if perm&1 != 0 {
-		x = "x"
-	}
-	return r + w + x
 }
 
 // filterFiles applies glob or substring matching to filter the file list.

@@ -42,7 +42,8 @@ go build -o cek .
 
 By default, `cek ls` shows the merged overlay filesystem, which is what you see
 inside a running container. All layers are combined, with upper layers
-overriding lower ones.
+overriding lower ones and whiteouts removing what a `RUN rm` deleted. Output
+is sorted by path, and directories end in a slash.
 
 You can optionally specify a path to list only files under a specific directory.
 

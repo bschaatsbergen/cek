@@ -87,26 +87,9 @@ func RunTree(ctx context.Context, cli *CLI, imageRef string, opts *TreeOptions) 
 
 	logger.Debug("Found layers", "count", len(layers))
 
-	var files []view.FileInfo
-
-	if opts.Layer > 0 {
-		if opts.Layer > len(layers) {
-			return fmt.Errorf("layer %d does not exist (image has %d layers)", opts.Layer, len(layers))
-		}
-		layerIdx := opts.Layer - 1
-		layer := layers[layerIdx]
-
-		var err error
-		files, err = extractFilesFromLayer(layer)
-		if err != nil {
-			return fmt.Errorf("failed to extract files from layer %d: %w", layerIdx+1, err)
-		}
-	} else {
-		var err error
-		files, err = extractMergedFilesystem(layers)
-		if err != nil {
-			return fmt.Errorf("failed to extract merged filesystem: %w", err)
-		}
+	files, err := listFiles(layers, opts.Layer)
+	if err != nil {
+		return err
 	}
 
 	rootPath := "/"
