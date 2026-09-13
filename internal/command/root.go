@@ -135,5 +135,6 @@ func AddCommands(root *cobra.Command, cli *CLI) {
 		NewTagsCommand(cli),
 		NewExportCommand(cli),
 		NewTreeCommand(cli),
+		NewBlobCommand(cli),
 	)
 }
