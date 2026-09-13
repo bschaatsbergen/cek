@@ -99,7 +99,7 @@ func (e *Entry) ModeString() string {
 	return string(typeChar) + string(perm)
 }
 
-func specialBit(current byte, withExec, withoutExec byte) byte {
+func specialBit(current, withExec, withoutExec byte) byte {
 	if current == 'x' {
 		return withExec
 	}

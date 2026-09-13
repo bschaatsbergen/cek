@@ -310,7 +310,7 @@ func TestOpen(t *testing.T) {
 		require.NoError(t, err)
 		rc, err := overlay.Open(layers[e.Layer], e)
 		require.NoError(t, err)
-		defer rc.Close()
+		defer func() { _ = rc.Close() }()
 		data, err := io.ReadAll(rc)
 		require.NoError(t, err)
 		return string(data)

@@ -77,7 +77,7 @@ func newAuthRegistry(t *testing.T, user, pass string) (host string) {
 	host = strings.TrimPrefix(srv.URL, "http://")
 
 	dir := t.TempDir()
-	cfg := fmt.Sprintf(`{"auths":{"%s":{"auth":"%s"}}}`, host, base64.StdEncoding.EncodeToString([]byte(user+":"+pass)))
+	cfg := fmt.Sprintf(`{"auths":{%q:{"auth":%q}}}`, host, base64.StdEncoding.EncodeToString([]byte(user+":"+pass)))
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "config.json"), []byte(cfg), 0o600))
 	t.Setenv("DOCKER_CONFIG", dir)
 
