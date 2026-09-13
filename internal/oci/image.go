@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/daemon"
@@ -82,10 +83,27 @@ func fetchFromDaemon(ref name.Reference, opts *FetchOptions) (v1.Image, error) {
 	return img, nil
 }
 
-func fetchFromRemote(ctx context.Context, ref name.Reference, opts *FetchOptions) (v1.Image, name.Reference, error) {
-	remoteOpts := []remote.Option{
+// remoteOptions returns the options shared by every registry request: the
+// context and the credentials from docker login and credential helpers, the
+// same ones docker and crane use.
+func remoteOptions(ctx context.Context) []remote.Option {
+	return []remote.Option{
 		remote.WithContext(ctx),
+		remote.WithAuthFromKeychain(authn.DefaultKeychain),
 	}
+}
+
+// ListTags lists the tags of a repository from the registry.
+func ListTags(ctx context.Context, repo name.Repository) ([]string, error) {
+	tags, err := remote.List(repo, remoteOptions(ctx)...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list tags: %w", err)
+	}
+	return tags, nil
+}
+
+func fetchFromRemote(ctx context.Context, ref name.Reference, opts *FetchOptions) (v1.Image, name.Reference, error) {
+	remoteOpts := remoteOptions(ctx)
 
 	if opts != nil && opts.Platform != "" {
 		platform, err := v1.ParsePlatform(opts.Platform)

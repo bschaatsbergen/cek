@@ -248,6 +248,20 @@ export DOCKER_HOST=unix://$HOME/.local/share/containers/podman/machine/podman.so
 If `DOCKER_HOST` is not set, cek will attempt to use the default Docker socket
 location.
 
+## Registry Authentication
+
+cek sends the credentials that `docker login` stores, and it honors the
+credential helpers configured in `~/.docker/config.json`. Private
+repositories work the same way they do with `docker pull` and `crane`.
+
+```bash
+docker login ghcr.io
+cek ls ghcr.io/org/private-image:latest
+```
+
+Logging in to Docker Hub also lifts the anonymous pull rate limit, which
+the `--pull always` policy runs into quickly.
+
 ## Pull Policies
 
 cek defaults to `if-not-present` to avoid registry rate limits. Images are
