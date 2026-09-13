@@ -62,7 +62,7 @@ func TestAddCommands(t *testing.T) {
 	root := command.NewRootCommand()
 	command.AddCommands(root, cli)
 
-	expectedCommands := []string{"version", "inspect", "ls", "cat", "tree", "tags", "export", "blob"}
+	expectedCommands := []string{"version", "inspect", "ls", "cat", "tree", "tags", "export", "blob", "manifest", "config"}
 	for _, name := range expectedCommands {
 		cmd, _, err := root.Find([]string{name})
 		assert.NoError(t, err, "command %s should exist", name)
@@ -76,7 +76,7 @@ func TestAddCommands_Count(t *testing.T) {
 	command.AddCommands(root, cli)
 
 	assert.True(t, root.HasSubCommands())
-	assert.Len(t, root.Commands(), 8)
+	assert.Len(t, root.Commands(), 10)
 }
 
 func TestConfigureView_JSONFlagAfterSubcommandFlags(t *testing.T) {

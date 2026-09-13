@@ -177,6 +177,28 @@ Long annotation values are cut short in the table. Use `--json` to get the
 same data, including per-layer `mediaType` and full `annotations`, as
 structured output.
 
+### Print the manifest and config
+
+`cek manifest` prints the image manifest: the config descriptor and every
+layer descriptor with its media type, size, digest and annotations.
+`cek config` prints the config blob: the runtime config (entrypoint, cmd,
+env, user, ports, labels), the rootfs diff IDs and the build history. Both
+are the documents the registry serves, not a reinterpretation.
+
+```bash
+cek manifest nginx:latest | jq '.layers[-1]'
+cek config nginx:latest | jq '.config.Env'
+cek config nginx:latest | jq -r '.history[].created_by'
+```
+
+The output is indented for reading. With `--json` the exact bytes are
+written instead, so the output hashes to the document's digest:
+
+```bash
+cek --json manifest --pull always nginx:latest | shasum -a 256
+cek inspect --pull always nginx:latest | grep Digest
+```
+
 ### Write a raw layer blob
 
 Write the bytes of a layer blob to standard output exactly as the registry

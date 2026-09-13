@@ -13,6 +13,7 @@ type Viewer interface {
 	Export() ExportView
 	Tags() TagsView
 	Blob() BlobView
+	Raw() RawView
 	Logger() Logger
 }
 
@@ -69,6 +70,10 @@ func (h *HumanView) Blob() BlobView {
 	return newBlobHumanView(h)
 }
 
+func (h *HumanView) Raw() RawView {
+	return newRawHumanView(h)
+}
+
 func (h *HumanView) Logger() Logger {
 	return h.logger
 }
@@ -113,6 +118,10 @@ func (j *JSONView) Tags() TagsView {
 
 func (j *JSONView) Blob() BlobView {
 	return newBlobJSONView(j)
+}
+
+func (j *JSONView) Raw() RawView {
+	return newRawJSONView(j)
 }
 
 func (j *JSONView) Logger() Logger {

@@ -142,5 +142,7 @@ func AddCommands(root *cobra.Command, cli *CLI) {
 		NewExportCommand(cli),
 		NewTreeCommand(cli),
 		NewBlobCommand(cli),
+		NewManifestCommand(cli),
+		NewConfigCommand(cli),
 	)
 }
