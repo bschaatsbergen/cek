@@ -10,8 +10,7 @@ import (
 )
 
 type InspectOptions struct {
-	Platform string
-	Pull     string
+	FetchFlags
 }
 
 func NewInspectCommand(cli *CLI) *cobra.Command {
@@ -42,8 +41,7 @@ func NewInspectCommand(cli *CLI) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&opts.Platform, "platform", "", "Specify platform (e.g., linux/amd64, linux/arm64)")
-	cmd.Flags().StringVar(&opts.Pull, "pull", "if-not-present", "Image pull policy (always, if-not-present, never)")
+	AddFetchFlags(cmd, &opts.FetchFlags)
 
 	return cmd
 }
@@ -52,11 +50,7 @@ func RunInspect(ctx context.Context, cli *CLI, imageRef string, opts *InspectOpt
 	logger := cli.Logger()
 	logger.Debug("Inspecting image", "image", imageRef)
 
-	fetchOpts := &oci.FetchOptions{
-		Platform:   opts.Platform,
-		PullPolicy: oci.PullPolicy(opts.Pull),
-	}
-	img, ref, err := oci.FetchImage(ctx, imageRef, fetchOpts)
+	img, ref, err := oci.FetchImage(ctx, imageRef, opts.FetchOptions())
 	if err != nil {
 		return err
 	}

@@ -16,11 +16,10 @@ import (
 )
 
 type LsOptions struct {
-	Layer    int
-	Filter   string
-	Platform string
-	Pull     string
-	Path     string
+	Layer  int
+	Filter string
+	Path   string
+	FetchFlags
 }
 
 func NewLsCommand(cli *CLI) *cobra.Command {
@@ -63,8 +62,7 @@ func NewLsCommand(cli *CLI) *cobra.Command {
 
 	cmd.Flags().IntVar(&opts.Layer, "layer", -1, "Show files from a specific layer (1-indexed)")
 	cmd.Flags().StringVar(&opts.Filter, "filter", "", "Filter file paths by pattern")
-	cmd.Flags().StringVar(&opts.Platform, "platform", "", "Specify platform (e.g., linux/amd64, linux/arm64)")
-	cmd.Flags().StringVar(&opts.Pull, "pull", "if-not-present", "Image pull policy (always, if-not-present, never)")
+	AddFetchFlags(cmd, &opts.FetchFlags)
 
 	return cmd
 }
@@ -73,11 +71,7 @@ func RunLs(ctx context.Context, cli *CLI, imageRef string, opts *LsOptions) erro
 	logger := cli.Logger()
 	logger.Debug("Listing files in image", "image", imageRef)
 
-	fetchOpts := &oci.FetchOptions{
-		Platform:   opts.Platform,
-		PullPolicy: oci.PullPolicy(opts.Pull),
-	}
-	img, _, err := oci.FetchImage(ctx, imageRef, fetchOpts)
+	img, _, err := oci.FetchImage(ctx, imageRef, opts.FetchOptions())
 	if err != nil {
 		return err
 	}

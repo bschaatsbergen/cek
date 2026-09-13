@@ -14,9 +14,8 @@ import (
 )
 
 type CatOptions struct {
-	Layer    int
-	Platform string
-	Pull     string
+	Layer int
+	FetchFlags
 }
 
 func NewCatCommand(cli *CLI) *cobra.Command {
@@ -48,8 +47,7 @@ func NewCatCommand(cli *CLI) *cobra.Command {
 	}
 
 	cmd.Flags().IntVar(&opts.Layer, "layer", -1, "Read file from a specific layer (1-indexed)")
-	cmd.Flags().StringVar(&opts.Platform, "platform", "", "Specify platform (e.g., linux/amd64, linux/arm64)")
-	cmd.Flags().StringVar(&opts.Pull, "pull", "if-not-present", "Image pull policy (always, if-not-present, never)")
+	AddFetchFlags(cmd, &opts.FetchFlags)
 
 	return cmd
 }
@@ -62,11 +60,7 @@ func RunCat(ctx context.Context, cli *CLI, imageRef, filePath string, opts *CatO
 		filePath = "/" + filePath
 	}
 
-	fetchOpts := &oci.FetchOptions{
-		Platform:   opts.Platform,
-		PullPolicy: oci.PullPolicy(opts.Pull),
-	}
-	img, _, err := oci.FetchImage(ctx, imageRef, fetchOpts)
+	img, _, err := oci.FetchImage(ctx, imageRef, opts.FetchOptions())
 	if err != nil {
 		return err
 	}

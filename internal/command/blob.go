@@ -10,9 +10,8 @@ import (
 )
 
 type BlobOptions struct {
-	Layer    int
-	Platform string
-	Pull     string
+	Layer int
+	FetchFlags
 }
 
 func NewBlobCommand(cli *CLI) *cobra.Command {
@@ -41,8 +40,7 @@ func NewBlobCommand(cli *CLI) *cobra.Command {
 
 	cmd.Flags().IntVar(&opts.Layer, "layer", 0, "Layer to write (1-indexed, required)")
 	_ = cmd.MarkFlagRequired("layer")
-	cmd.Flags().StringVar(&opts.Platform, "platform", "", "Specify platform (e.g., linux/amd64, linux/arm64)")
-	cmd.Flags().StringVar(&opts.Pull, "pull", "if-not-present", "Image pull policy (always, if-not-present, never)")
+	AddFetchFlags(cmd, &opts.FetchFlags)
 
 	return cmd
 }
@@ -55,11 +53,7 @@ func RunBlob(ctx context.Context, cli *CLI, imageRef string, opts *BlobOptions) 
 		return fmt.Errorf("layer must be 1 or greater, got %d", opts.Layer)
 	}
 
-	fetchOpts := &oci.FetchOptions{
-		Platform:   opts.Platform,
-		PullPolicy: oci.PullPolicy(opts.Pull),
-	}
-	img, _, err := oci.FetchImage(ctx, imageRef, fetchOpts)
+	img, _, err := oci.FetchImage(ctx, imageRef, opts.FetchOptions())
 	if err != nil {
 		return err
 	}
