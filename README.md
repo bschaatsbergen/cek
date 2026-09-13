@@ -94,6 +94,34 @@ like in a running container: a file deleted by an upper layer is gone, and
 symlinks are followed, so `/etc/os-release` on Alpine resolves through its
 symlink to `/usr/lib/os-release`.
 
+### Copy files out of an image
+
+Copy a file or a whole directory from an image to disk, without creating a
+container. Destination rules follow `docker cp`: a file lands at the
+destination, or inside it if that is a directory; a directory is copied to
+the destination, or into it under its own name if it already exists. End
+the source with `/.` to copy only its contents.
+
+```bash
+# One file
+cek cp alpine:latest /etc/os-release .
+
+# A directory, keeping symlinks and permissions
+cek cp nginx:latest /etc/nginx ./nginx-conf
+
+# Only the contents of a directory
+cek cp nginx:latest /etc/nginx/. ./nginx-conf
+
+# What a single layer added
+cek cp --layer 2 myapp:latest /app ./app-layer-2
+```
+
+The source path is resolved through symlinks, so `/etc/os-release` on
+Alpine yields the file it points at. Inside a copied directory, symlinks
+stay symlinks. Device nodes and fifos are skipped and counted in the
+summary. A layer that ships a symlink and then files "inside" it is refused
+rather than written through the link.
+
 ### List available tags
 
 List all tags in a repository from the remote registry, allowing you to find

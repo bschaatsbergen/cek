@@ -15,6 +15,7 @@ type Viewer interface {
 	Blob() BlobView
 	Raw() RawView
 	Diff() DiffView
+	Cp() CpView
 	Logger() Logger
 }
 
@@ -79,6 +80,10 @@ func (h *HumanView) Diff() DiffView {
 	return newDiffHumanView(h)
 }
 
+func (h *HumanView) Cp() CpView {
+	return newCpHumanView(h)
+}
+
 func (h *HumanView) Logger() Logger {
 	return h.logger
 }
@@ -131,6 +136,10 @@ func (j *JSONView) Raw() RawView {
 
 func (j *JSONView) Diff() DiffView {
 	return newDiffJSONView(j)
+}
+
+func (j *JSONView) Cp() CpView {
+	return newCpJSONView(j)
 }
 
 func (j *JSONView) Logger() Logger {

@@ -36,7 +36,7 @@ func dirm(name string) member {
 	return member{hdr: tar.Header{Name: name, Typeflag: tar.TypeDir, Mode: 0o755}}
 }
 
-func fsFrom(t *testing.T, members ...member) *overlay.FS {
+func layerFrom(t *testing.T, members ...member) overlay.Layer {
 	t.Helper()
 	var buf bytes.Buffer
 	tw := tar.NewWriter(&buf)
@@ -46,8 +46,12 @@ func fsFrom(t *testing.T, members ...member) *overlay.FS {
 		require.NoError(t, err)
 	}
 	require.NoError(t, tw.Close())
+	return &memLayer{data: buf.Bytes()}
+}
 
-	fs, err := overlay.Build([]overlay.Layer{&memLayer{data: buf.Bytes()}}, overlay.WithDigests())
+func fsFrom(t *testing.T, members ...member) *overlay.FS {
+	t.Helper()
+	fs, err := overlay.Build([]overlay.Layer{layerFrom(t, members...)}, overlay.WithDigests())
 	require.NoError(t, err)
 	return fs
 }
