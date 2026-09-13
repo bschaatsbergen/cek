@@ -28,15 +28,15 @@ func TestVersionCommand_Execute(t *testing.T) {
 	assert.NotEmpty(t, buf.String())
 }
 
-func TestVersionCommand_WithPath(t *testing.T) {
+func TestVersionCommand_RejectsArgs(t *testing.T) {
 	buf := new(bytes.Buffer)
 	cli := command.NewCLI(view.ViewHuman, buf, view.LogLevelSilent)
 	cmd := command.NewVersionCommand(cli)
 	cmd.SetArgs([]string{"."})
 
 	err := cmd.Execute()
-	assert.NoError(t, err)
-	assert.NotEmpty(t, buf.String())
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "unknown command")
 }
 
 func TestVersionCommand_TooManyArgs(t *testing.T) {
@@ -47,5 +47,5 @@ func TestVersionCommand_TooManyArgs(t *testing.T) {
 
 	err := cmd.Execute()
 	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "expected at most 1")
+	assert.Contains(t, err.Error(), "unknown command")
 }
