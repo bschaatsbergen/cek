@@ -27,7 +27,7 @@ func NewInspectCommand(cli *CLI) *cobra.Command {
 			"  - Creation timestamp\n" +
 			"  - OS/Architecture\n" +
 			"  - Total size\n" +
-			"  - Layer information (digest and size)\n\n" +
+			"  - Layer information (digest, size, media type and annotations)\n\n" +
 			"The image reference can be:\n" +
 			"  - A tagged image: alpine:latest\n" +
 			"  - A specific digest: alpine@sha256:...\n" +
@@ -76,29 +76,24 @@ func RunInspect(ctx context.Context, cli *CLI, imageRef string, opts *InspectOpt
 		return fmt.Errorf("failed to get config file: %w", err)
 	}
 
-	layers, err := img.Layers()
+	// The manifest descriptors carry everything the registry knows about a
+	// layer: digest, size, media type and annotations.
+	manifest, err := img.Manifest()
 	if err != nil {
-		return fmt.Errorf("failed to get layers: %w", err)
+		return fmt.Errorf("failed to get manifest: %w", err)
 	}
 
 	var totalSize int64
-	layerDataList := make([]view.LayerData, 0, len(layers))
-	for i, layer := range layers {
-		layerDigest, err := layer.Digest()
-		if err != nil {
-			return fmt.Errorf("failed to get layer digest: %w", err)
-		}
-
-		size, err := layer.Size()
-		if err != nil {
-			return fmt.Errorf("failed to get layer size: %w", err)
-		}
-		totalSize += size
+	layerDataList := make([]view.LayerData, 0, len(manifest.Layers))
+	for i, desc := range manifest.Layers {
+		totalSize += desc.Size
 
 		layerDataList = append(layerDataList, view.LayerData{
-			Index:  i + 1,
-			Digest: layerDigest,
-			Size:   size,
+			Index:       i + 1,
+			Digest:      desc.Digest,
+			Size:        desc.Size,
+			MediaType:   string(desc.MediaType),
+			Annotations: desc.Annotations,
 		})
 	}
 

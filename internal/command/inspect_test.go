@@ -2,6 +2,7 @@ package command_test
 
 import (
 	"bytes"
+	"encoding/json"
 	"testing"
 
 	"github.com/bschaatsbergen/cek/internal/command"
@@ -211,4 +212,39 @@ func TestRunInspect_CreatedTimestamp(t *testing.T) {
 	output := buf.String()
 	// Should have RFC3339 formatted timestamp
 	assert.Regexp(t, `Created: \d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}`, output)
+}
+
+func TestRunInspect_LayerMediaType(t *testing.T) {
+	buf := new(bytes.Buffer)
+	cli := command.NewCLI(view.ViewHuman, buf, view.LogLevelSilent)
+	cmd := command.NewInspectCommand(cli)
+	cmd.SetArgs([]string{"alpine:latest", "--pull", "always"})
+
+	err := cmd.Execute()
+	require.NoError(t, err)
+
+	output := buf.String()
+	assert.Contains(t, output, "Media Type")
+	assert.Regexp(t, `1\s+sha256:[0-9a-f]{64}\s+\S+ [KMG]?B\s+application/vnd\.\S+`, output)
+}
+
+func TestRunInspect_JSONLayerMediaType(t *testing.T) {
+	buf := new(bytes.Buffer)
+	cli := command.NewCLI(view.ViewJSON, buf, view.LogLevelSilent)
+	cmd := command.NewInspectCommand(cli)
+	cmd.SetArgs([]string{"alpine:latest", "--pull", "always"})
+
+	err := cmd.Execute()
+	require.NoError(t, err)
+
+	var output struct {
+		Layers []struct {
+			Digest    string `json:"digest"`
+			MediaType string `json:"mediaType"`
+		} `json:"layers"`
+	}
+	require.NoError(t, json.Unmarshal(buf.Bytes(), &output))
+	require.NotEmpty(t, output.Layers)
+	assert.Contains(t, output.Layers[0].Digest, "sha256:")
+	assert.Contains(t, output.Layers[0].MediaType, "application/vnd.")
 }

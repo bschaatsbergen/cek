@@ -3,6 +3,8 @@ package view
 import (
 	"encoding/json"
 	"fmt"
+	"maps"
+	"slices"
 	"text/tabwriter"
 	"time"
 
@@ -24,9 +26,11 @@ type InspectData struct {
 
 // LayerData contains information about a single layer.
 type LayerData struct {
-	Index  int
-	Digest v1.Hash
-	Size   int64
+	Index       int
+	Digest      v1.Hash
+	Size        int64
+	MediaType   string
+	Annotations map[string]string
 }
 
 type InspectView interface {
@@ -53,10 +57,30 @@ func (v *inspectHumanView) Render(data *InspectData) error {
 	v.Printf("Layers:\n")
 
 	w := tabwriter.NewWriter(v.Writer, 0, 0, 2, ' ', 0)
-	_, _ = fmt.Fprintf(w, "#\tDigest\tSize\n")
+	_, _ = fmt.Fprintf(w, "#\tDigest\tSize\tMedia Type\n")
 
 	for _, layer := range data.Layers {
-		_, _ = fmt.Fprintf(w, "%d\t%s\t%s\n", layer.Index, layer.Digest.String(), oci.FormatBytes(layer.Size))
+		_, _ = fmt.Fprintf(w, "%d\t%s\t%s\t%s\n", layer.Index, layer.Digest.String(), oci.FormatBytes(layer.Size), layer.MediaType)
+	}
+
+	if err := w.Flush(); err != nil {
+		return fmt.Errorf("failed to flush output: %w", err)
+	}
+
+	if !hasLayerAnnotations(data.Layers) {
+		return nil
+	}
+
+	v.Printf("\n")
+	v.Printf("Layer annotations:\n")
+
+	w = tabwriter.NewWriter(v.Writer, 0, 0, 2, ' ', 0)
+	_, _ = fmt.Fprintf(w, "#\tKey\tValue\n")
+
+	for _, layer := range data.Layers {
+		for _, key := range slices.Sorted(maps.Keys(layer.Annotations)) {
+			_, _ = fmt.Fprintf(w, "%d\t%s\t%s\n", layer.Index, key, layer.Annotations[key])
+		}
 	}
 
 	if err := w.Flush(); err != nil {
@@ -64,6 +88,15 @@ func (v *inspectHumanView) Render(data *InspectData) error {
 	}
 
 	return nil
+}
+
+func hasLayerAnnotations(layers []LayerData) bool {
+	for _, layer := range layers {
+		if len(layer.Annotations) > 0 {
+			return true
+		}
+	}
+	return false
 }
 
 // JSON view implementation
@@ -77,9 +110,11 @@ func newInspectJSONView(jv *JSONView) *inspectJSONView {
 
 func (v *inspectJSONView) Render(data *InspectData) error {
 	type jsonLayer struct {
-		Index  int    `json:"index"`
-		Digest string `json:"digest"`
-		Size   int64  `json:"size"`
+		Index       int               `json:"index"`
+		Digest      string            `json:"digest"`
+		Size        int64             `json:"size"`
+		MediaType   string            `json:"mediaType"`
+		Annotations map[string]string `json:"annotations,omitempty"`
 	}
 
 	type jsonOutput struct {
@@ -96,9 +131,11 @@ func (v *inspectJSONView) Render(data *InspectData) error {
 	layers := make([]jsonLayer, len(data.Layers))
 	for i, layer := range data.Layers {
 		layers[i] = jsonLayer{
-			Index:  layer.Index,
-			Digest: layer.Digest.String(),
-			Size:   layer.Size,
+			Index:       layer.Index,
+			Digest:      layer.Digest.String(),
+			Size:        layer.Size,
+			MediaType:   layer.MediaType,
+			Annotations: layer.Annotations,
 		}
 	}
 
