@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"maps"
 	"slices"
+	"strconv"
+	"strings"
 	"text/tabwriter"
 	"time"
 
@@ -21,7 +23,20 @@ type InspectData struct {
 	OS           string
 	Architecture string
 	TotalSize    int64
+	Config       ConfigData
 	Layers       []LayerData
+}
+
+// ConfigData is the runtime configuration from the image config.
+type ConfigData struct {
+	Entrypoint   []string
+	Cmd          []string
+	User         string
+	WorkingDir   string
+	ExposedPorts []string
+	Volumes      []string
+	Env          []string
+	Labels       map[string]string
 }
 
 // LayerData contains information about a single layer.
@@ -58,6 +73,7 @@ func (v *inspectHumanView) Render(data *InspectData) error {
 	v.Printf("Created: %s\n", data.Created.Format(time.RFC3339))
 	v.Printf("OS/Arch: %s/%s\n", data.OS, data.Architecture)
 	v.Printf("Size: %s\n", oci.FormatBytes(data.TotalSize))
+	v.renderConfig(&data.Config)
 	v.Printf("\n")
 	v.Printf("Layers:\n")
 
@@ -93,6 +109,55 @@ func (v *inspectHumanView) Render(data *InspectData) error {
 	}
 
 	return nil
+}
+
+// renderConfig prints the runtime config, skipping anything unset so a
+// minimal image stays a few lines. Entrypoint and Cmd read as a shell line.
+func (v *inspectHumanView) renderConfig(c *ConfigData) {
+	if len(c.Entrypoint) > 0 {
+		v.Printf("Entrypoint: %s\n", shellJoin(c.Entrypoint))
+	}
+	if len(c.Cmd) > 0 {
+		v.Printf("Cmd: %s\n", shellJoin(c.Cmd))
+	}
+	if c.User != "" {
+		v.Printf("User: %s\n", c.User)
+	}
+	if c.WorkingDir != "" {
+		v.Printf("WorkingDir: %s\n", c.WorkingDir)
+	}
+	if len(c.ExposedPorts) > 0 {
+		v.Printf("Ports: %s\n", strings.Join(c.ExposedPorts, " "))
+	}
+	if len(c.Volumes) > 0 {
+		v.Printf("Volumes: %s\n", strings.Join(c.Volumes, " "))
+	}
+	if len(c.Env) > 0 {
+		v.Printf("Env:\n")
+		for _, e := range c.Env {
+			v.Printf("  %s\n", e)
+		}
+	}
+	if len(c.Labels) > 0 {
+		v.Printf("Labels:\n")
+		for _, key := range slices.Sorted(maps.Keys(c.Labels)) {
+			v.Printf("  %s=%s\n", key, truncate(c.Labels[key], maxAnnotationValueWidth))
+		}
+	}
+}
+
+// shellJoin renders an argv the way it would be typed in a shell: words
+// separated by spaces, quoted only when they need it.
+func shellJoin(args []string) string {
+	quoted := make([]string, len(args))
+	for i, arg := range args {
+		if arg == "" || strings.ContainsAny(arg, " \t\n\"'\\$`#;&|<>()") {
+			quoted[i] = strconv.Quote(arg)
+		} else {
+			quoted[i] = arg
+		}
+	}
+	return strings.Join(quoted, " ")
 }
 
 // truncate cuts s to width runes and marks the cut with an ellipsis.
@@ -131,6 +196,17 @@ func (v *inspectJSONView) Render(data *InspectData) error {
 		Annotations map[string]string `json:"annotations,omitempty"`
 	}
 
+	type jsonConfig struct {
+		Entrypoint   []string          `json:"entrypoint,omitempty"`
+		Cmd          []string          `json:"cmd,omitempty"`
+		User         string            `json:"user,omitempty"`
+		WorkingDir   string            `json:"workingDir,omitempty"`
+		ExposedPorts []string          `json:"exposedPorts,omitempty"`
+		Volumes      []string          `json:"volumes,omitempty"`
+		Env          []string          `json:"env,omitempty"`
+		Labels       map[string]string `json:"labels,omitempty"`
+	}
+
 	type jsonOutput struct {
 		Image    string      `json:"image"`
 		Registry string      `json:"registry"`
@@ -139,6 +215,7 @@ func (v *inspectJSONView) Render(data *InspectData) error {
 		OS       string      `json:"os"`
 		Arch     string      `json:"arch"`
 		Size     int64       `json:"size"`
+		Config   jsonConfig  `json:"config"`
 		Layers   []jsonLayer `json:"layers"`
 	}
 
@@ -161,6 +238,7 @@ func (v *inspectJSONView) Render(data *InspectData) error {
 		OS:       data.OS,
 		Arch:     data.Architecture,
 		Size:     data.TotalSize,
+		Config:   jsonConfig(data.Config),
 		Layers:   layers,
 	}
 

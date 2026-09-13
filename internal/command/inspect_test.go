@@ -260,3 +260,36 @@ func TestInspectCommand_InvalidPullPolicy(t *testing.T) {
 	assert.Contains(t, err.Error(), `invalid pull policy "bogus"`)
 	assert.Empty(t, buf.String())
 }
+
+func TestRunInspect_ConfigSection(t *testing.T) {
+	buf := new(bytes.Buffer)
+	cli := command.NewCLI(view.ViewHuman, buf, view.LogLevelSilent)
+	cmd := command.NewInspectCommand(cli)
+	cmd.SetArgs([]string{"alpine:latest"})
+
+	require.NoError(t, cmd.Execute())
+
+	output := buf.String()
+	assert.Contains(t, output, "Cmd: /bin/sh\n")
+	assert.Contains(t, output, "Env:\n  PATH=")
+	assert.NotContains(t, output, "Entrypoint:")
+}
+
+func TestRunInspect_JSONConfig(t *testing.T) {
+	buf := new(bytes.Buffer)
+	cli := command.NewCLI(view.ViewJSON, buf, view.LogLevelSilent)
+	cmd := command.NewInspectCommand(cli)
+	cmd.SetArgs([]string{"alpine:latest"})
+
+	require.NoError(t, cmd.Execute())
+
+	var output struct {
+		Config struct {
+			Cmd []string `json:"cmd"`
+			Env []string `json:"env"`
+		} `json:"config"`
+	}
+	require.NoError(t, json.Unmarshal(buf.Bytes(), &output))
+	assert.Equal(t, []string{"/bin/sh"}, output.Config.Cmd)
+	assert.NotEmpty(t, output.Config.Env)
+}

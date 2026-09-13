@@ -22,6 +22,19 @@ func inspectFixture() *view.InspectData {
 		OS:           "linux",
 		Architecture: "arm64",
 		TotalSize:    3072,
+		Config: view.ConfigData{
+			Entrypoint:   []string{"/docker-entrypoint.sh"},
+			Cmd:          []string{"nginx", "-g", "daemon off;"},
+			User:         "nginx",
+			WorkingDir:   "/app",
+			ExposedPorts: []string{"80/tcp", "443/tcp"},
+			Volumes:      []string{"/var/cache/nginx"},
+			Env:          []string{"PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin", "NGINX_VERSION=1.29.1"},
+			Labels: map[string]string{
+				"org.opencontainers.image.source":      "https://github.com/bschaatsbergen/cek",
+				"org.opencontainers.image.description": strings.Repeat("long description ", 10),
+			},
+		},
 		Layers: []view.LayerData{
 			{
 				Index:     1,
@@ -151,4 +164,79 @@ func TestInspectJSONView_KeepsFullAnnotationValues(t *testing.T) {
 
 	require.NoError(t, jv.Inspect().Render(data))
 	assert.Contains(t, buf.String(), long)
+}
+
+func TestInspectHumanView_RendersConfig(t *testing.T) {
+	buf := new(bytes.Buffer)
+	hv := view.NewHumanView(view.NewStream(buf), view.LogLevelSilent)
+
+	require.NoError(t, hv.Inspect().Render(inspectFixture()))
+
+	output := buf.String()
+	assert.Contains(t, output, "Entrypoint: /docker-entrypoint.sh\n")
+	assert.Contains(t, output, "Cmd: nginx -g \"daemon off;\"\n")
+	assert.Contains(t, output, "User: nginx\n")
+	assert.Contains(t, output, "WorkingDir: /app\n")
+	assert.Contains(t, output, "Ports: 80/tcp 443/tcp\n")
+	assert.Contains(t, output, "Volumes: /var/cache/nginx\n")
+	assert.Contains(t, output, "Env:\n  PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin\n  NGINX_VERSION=1.29.1\n")
+	assert.Contains(t, output, "Labels:\n  org.opencontainers.image.description=long description long description long description long desc...\n  org.opencontainers.image.source=https://github.com/bschaatsbergen/cek\n")
+
+	// Config sits between the header and the layer table.
+	assert.Less(t, strings.Index(output, "Size:"), strings.Index(output, "Entrypoint:"))
+	assert.Less(t, strings.Index(output, "Labels:"), strings.Index(output, "Layers:"))
+}
+
+func TestInspectHumanView_EmptyConfig_OmitsFields(t *testing.T) {
+	data := inspectFixture()
+	data.Config = view.ConfigData{Cmd: []string{"/bin/sh"}}
+
+	buf := new(bytes.Buffer)
+	hv := view.NewHumanView(view.NewStream(buf), view.LogLevelSilent)
+
+	require.NoError(t, hv.Inspect().Render(data))
+
+	output := buf.String()
+	assert.Contains(t, output, "Cmd: /bin/sh\n")
+	for _, absent := range []string{"Entrypoint:", "User:", "WorkingDir:", "Ports:", "Volumes:", "Env:", "Labels:"} {
+		assert.NotContains(t, output, absent)
+	}
+}
+
+func TestInspectJSONView_RendersConfig(t *testing.T) {
+	buf := new(bytes.Buffer)
+	jv := view.NewJSONView(view.NewStream(buf), view.LogLevelSilent)
+
+	require.NoError(t, jv.Inspect().Render(inspectFixture()))
+
+	var output struct {
+		Config struct {
+			Entrypoint   []string          `json:"entrypoint"`
+			Cmd          []string          `json:"cmd"`
+			User         string            `json:"user"`
+			WorkingDir   string            `json:"workingDir"`
+			ExposedPorts []string          `json:"exposedPorts"`
+			Volumes      []string          `json:"volumes"`
+			Env          []string          `json:"env"`
+			Labels       map[string]string `json:"labels"`
+		} `json:"config"`
+	}
+	require.NoError(t, json.Unmarshal(buf.Bytes(), &output))
+	assert.Equal(t, []string{"nginx", "-g", "daemon off;"}, output.Config.Cmd)
+	assert.Equal(t, []string{"80/tcp", "443/tcp"}, output.Config.ExposedPorts)
+	assert.Equal(t, "nginx", output.Config.User)
+	assert.Len(t, output.Config.Labels, 2)
+	// JSON keeps label values whole.
+	assert.Contains(t, buf.String(), strings.Repeat("long description ", 10))
+}
+
+func TestInspectJSONView_EmptyConfig_OmitsFields(t *testing.T) {
+	data := inspectFixture()
+	data.Config = view.ConfigData{}
+
+	buf := new(bytes.Buffer)
+	jv := view.NewJSONView(view.NewStream(buf), view.LogLevelSilent)
+
+	require.NoError(t, jv.Inspect().Render(data))
+	assert.Contains(t, buf.String(), `"config": {}`)
 }

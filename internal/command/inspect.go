@@ -3,9 +3,12 @@ package command
 import (
 	"context"
 	"fmt"
+	"maps"
+	"slices"
 
 	"github.com/bschaatsbergen/cek/internal/oci"
 	"github.com/bschaatsbergen/cek/internal/view"
+	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/spf13/cobra"
 )
 
@@ -26,6 +29,7 @@ func NewInspectCommand(cli *CLI) *cobra.Command {
 			"  - Creation timestamp\n" +
 			"  - OS/Architecture\n" +
 			"  - Total size\n" +
+			"  - Runtime config (entrypoint, cmd, user, ports, env, labels)\n" +
 			"  - Layer information (digest, size, media type and annotations)\n\n" +
 			"The image reference can be:\n" +
 			"  - A tagged image: alpine:latest\n" +
@@ -99,6 +103,22 @@ func RunInspect(ctx context.Context, cli *CLI, imageRef string, opts *InspectOpt
 		OS:           configFile.OS,
 		Architecture: configFile.Architecture,
 		TotalSize:    totalSize,
+		Config:       configData(&configFile.Config),
 		Layers:       layerDataList,
 	})
+}
+
+// configData copies the runtime config into the view's shape. Set-valued
+// fields come out sorted so the output is stable.
+func configData(c *v1.Config) view.ConfigData {
+	return view.ConfigData{
+		Entrypoint:   c.Entrypoint,
+		Cmd:          c.Cmd,
+		User:         c.User,
+		WorkingDir:   c.WorkingDir,
+		ExposedPorts: slices.Sorted(maps.Keys(c.ExposedPorts)),
+		Volumes:      slices.Sorted(maps.Keys(c.Volumes)),
+		Env:          c.Env,
+		Labels:       c.Labels,
+	}
 }

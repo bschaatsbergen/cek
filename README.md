@@ -148,34 +148,48 @@ cek tree --layer 4 python:3.12-slim /usr/local/bin
 
 ### Inspect image metadata
 
-View image details including digest, creation time, architecture, total size,
-and individual layer information. Each layer is listed with its digest, size
-and media type. Layers that carry annotations in the manifest, such as
-encrypted layers, get a separate table with the annotation keys and values.
+View image details: digest, creation time, architecture, total size, the
+runtime config and every layer with its digest, size and media type. Only
+config fields that are set are printed. Layers that carry annotations in
+the manifest, such as encrypted layers, get a separate table with the
+annotation keys and values.
 
 ```bash
 cek inspect nginx
 Image: nginx
 Registry: index.docker.io
-Digest: sha256:988dc6ba913b85fe049a5d06452fe8766c4abda44a06614f47458ff4579330fd
-Created: 2026-09-02T21:04:32Z
-OS/Arch: linux/amd64
-Size: 63.2 MB
+Digest: sha256:8b76a8da0aa5533dda5053935f320f3ebe07beec9e12ea1e8e3b9e1ae1a6bf5a
+Created: 2026-09-02T21:05:47Z
+OS/Arch: linux/arm64
+Size: 62.0 MB
+Entrypoint: /docker-entrypoint.sh
+Cmd: nginx -g "daemon off;"
+Ports: 80/tcp
+Env:
+  PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+  NGINX_VERSION=1.31.5
+  NJS_VERSION=1.0.1
+  NJS_RELEASE=1~trixie
+  ACME_VERSION=0.4.1
+  PKG_RELEASE=1~trixie
+  DYNPKG_RELEASE=1~trixie
+Labels:
+  maintainer=NGINX Docker Maintainers <docker-maint@nginx.com>
 
 Layers:
 #  Digest                                                                   Size     Media Type
-1  sha256:6310eb16bf4251731feab01e8f633bf5e2d75a657ccad97f420b1f83cce457be  28.4 MB  application/vnd.oci.image.layer.v1.tar+gzip
-2  sha256:956faab5efb34579d85a5c0b79f1b44c111197a0c1fea9c18b2e836821d68480  34.8 MB  application/vnd.oci.image.layer.v1.tar+gzip
-3  sha256:a44b5c8be61615ee48a9525b9aa459639de34e8e004ad3b3a6f52b793051da3c  629 B    application/vnd.oci.image.layer.v1.tar+gzip
-4  sha256:02fc02c4ab8d7c507d6a06a08833d6b669278849c9533729535984c86ff199cb  956 B    application/vnd.oci.image.layer.v1.tar+gzip
-5  sha256:c12f394dea35bb47b5511557233c5abec5360e40f9fade8f3ff1de488ecdc696  404 B    application/vnd.oci.image.layer.v1.tar+gzip
-6  sha256:07db7bf2649b9fe0ccc9c86378fc5ed36e90bdfe6acf529e567c45ee96a2b9c3  1.2 KB   application/vnd.oci.image.layer.v1.tar+gzip
-7  sha256:f340c1b7c1d6861ed76e1adc2630b145227b071b54259bc97e318297cb4b8156  1.4 KB   application/vnd.oci.image.layer.v1.tar+gzip
+1  sha256:bf7af0229701decd1b9f42143504fc8f69e5664c37e57001d198e731e4f86c2e  28.8 MB  application/vnd.docker.image.rootfs.diff.tar.gzip
+2  sha256:ac3ce1865cbf71ffb4cb1e8a38faa751b340b68868cd6f3904f80ae326353261  33.2 MB  application/vnd.docker.image.rootfs.diff.tar.gzip
+3  sha256:50355e0ebcbc3c053fbd5e75aa03114809f9f4f1177379c71790757c33b04f5c  629 B    application/vnd.docker.image.rootfs.diff.tar.gzip
+4  sha256:dd00b62474a6e527cc71136b97d2c2d0a68aa282b9685568f40d5e399bdb990a  957 B    application/vnd.docker.image.rootfs.diff.tar.gzip
+5  sha256:fef72342d9bd299793d88c4a3baeb75aac54c538c85bafd45776883f4b8bf78d  405 B    application/vnd.docker.image.rootfs.diff.tar.gzip
+6  sha256:4225c79b86e9402dd4857cf5d32e29a13acecf02d57bba22bf46f0926f05a177  1.2 KB   application/vnd.docker.image.rootfs.diff.tar.gzip
+7  sha256:a3d95972273c02fbedb65572c40fb5501ce9f8c1514ba62c8d51ff3a9ddaed0e  1.4 KB   application/vnd.docker.image.rootfs.diff.tar.gzip
 ```
 
-Long annotation values are cut short in the table. Use `--json` to get the
-same data, including per-layer `mediaType` and full `annotations`, as
-structured output.
+Long label and annotation values are cut short in the table. Use `--json`
+to get the same data, including the full `config` and per-layer
+`mediaType` and `annotations`, as structured output.
 
 ### Print the manifest and config
 
