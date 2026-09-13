@@ -410,11 +410,13 @@ func TestRunLs_OutputIsSortedByPath(t *testing.T) {
 
 	require.NoError(t, cmd.Execute())
 
+	// Rows are "<mode> <size> <unit> <path>", with " -> <target>" after
+	// the path for symlinks.
 	var paths []string
 	for _, line := range strings.Split(strings.TrimSpace(buf.String()), "\n")[1:] {
 		fields := strings.Fields(line)
-		require.NotEmpty(t, fields)
-		paths = append(paths, fields[len(fields)-1])
+		require.GreaterOrEqual(t, len(fields), 4, line)
+		paths = append(paths, fields[3])
 	}
 	require.NotEmpty(t, paths)
 	assert.True(t, sort.StringsAreSorted(paths), "ls output must be sorted by path")
