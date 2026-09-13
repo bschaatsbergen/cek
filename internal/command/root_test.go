@@ -2,11 +2,13 @@ package command_test
 
 import (
 	"bytes"
+	"encoding/json"
 	"testing"
 
 	"github.com/bschaatsbergen/cek/internal/command"
 	"github.com/bschaatsbergen/cek/internal/view"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNewRootCommand(t *testing.T) {
@@ -74,4 +76,50 @@ func TestAddCommands_Count(t *testing.T) {
 
 	assert.True(t, root.HasSubCommands())
 	assert.Len(t, root.Commands(), 8)
+}
+
+func TestConfigureView_JSONFlagAfterSubcommandFlags(t *testing.T) {
+	buf := new(bytes.Buffer)
+	cli := command.NewCLI(view.ViewHuman, buf, view.LogLevelSilent)
+	root := command.NewRootCommand()
+	command.ConfigureView(root, cli)
+	command.AddCommands(root, cli)
+	root.SetArgs([]string{"inspect", "--pull", "always", "alpine:latest", "--json"})
+
+	require.NoError(t, root.Execute())
+
+	var output struct {
+		Image string `json:"image"`
+	}
+	require.NoError(t, json.Unmarshal(buf.Bytes(), &output), "expected JSON output, got: %s", buf.String())
+	assert.Equal(t, "alpine:latest", output.Image)
+}
+
+func TestConfigureView_JSONFlagBeforeSubcommand(t *testing.T) {
+	buf := new(bytes.Buffer)
+	cli := command.NewCLI(view.ViewHuman, buf, view.LogLevelSilent)
+	root := command.NewRootCommand()
+	command.ConfigureView(root, cli)
+	command.AddCommands(root, cli)
+	root.SetArgs([]string{"--json", "inspect", "--pull", "always", "alpine:latest"})
+
+	require.NoError(t, root.Execute())
+
+	var output struct {
+		Image string `json:"image"`
+	}
+	require.NoError(t, json.Unmarshal(buf.Bytes(), &output), "expected JSON output, got: %s", buf.String())
+	assert.Equal(t, "alpine:latest", output.Image)
+}
+
+func TestConfigureView_DefaultsToHumanView(t *testing.T) {
+	buf := new(bytes.Buffer)
+	cli := command.NewCLI(view.ViewHuman, buf, view.LogLevelSilent)
+	root := command.NewRootCommand()
+	command.ConfigureView(root, cli)
+	command.AddCommands(root, cli)
+	root.SetArgs([]string{"inspect", "--pull", "always", "alpine:latest"})
+
+	require.NoError(t, root.Execute())
+	assert.Contains(t, buf.String(), "Image: alpine:latest")
 }

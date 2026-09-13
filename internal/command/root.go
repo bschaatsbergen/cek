@@ -12,11 +12,7 @@ import (
 	"github.com/bschaatsbergen/cek/version"
 )
 
-var (
-	jsonFlag  bool
-	debugFlag bool
-	rootCmd   *cobra.Command
-)
+var rootCmd *cobra.Command
 
 func NewRootCommand() *cobra.Command {
 	cmd := &cobra.Command{
@@ -47,9 +43,43 @@ _________ _______________  __.
 	}
 
 	cmd.CompletionOptions.DisableDefaultCmd = true
-	cmd.PersistentFlags().BoolVar(&jsonFlag, "json", false, "Output in JSON format")
-	cmd.PersistentFlags().BoolVar(&debugFlag, "debug", false, "Set log level to debug")
+	cmd.PersistentFlags().Bool("json", false, "Output in JSON format")
+	cmd.PersistentFlags().Bool("debug", false, "Set log level to debug")
 	return cmd
+}
+
+// ConfigureView replaces the CLI's view once cobra has parsed the global
+// flags. Those flags are only known after the subcommand is resolved, so
+// the view cannot be chosen before Execute. PersistentPreRun runs after
+// parsing and before any RunE reads the view, for every subcommand.
+func ConfigureView(root *cobra.Command, cli *CLI) {
+	root.PersistentPreRun = func(cmd *cobra.Command, args []string) {
+		jsonOutput, _ := cmd.Flags().GetBool("json")
+		debug, _ := cmd.Flags().GetBool("debug")
+
+		viewType := view.ViewHuman
+		if jsonOutput {
+			viewType = view.ViewJSON
+		}
+
+		cli.Viewer = view.NewViewer(viewType, cli.Stream, logLevel(debug))
+	}
+}
+
+// logLevel derives the log level from the --debug flag and the CEK_LOG
+// environment variable. The flag wins.
+func logLevel(debug bool) view.LogLevel {
+	if debug {
+		return view.LogLevelDebug
+	}
+	switch strings.ToLower(os.Getenv("CEK_LOG")) {
+	case "debug":
+		return view.LogLevelDebug
+	case "info":
+		return view.LogLevelInfo
+	default:
+		return view.LogLevelSilent
+	}
 }
 
 func setCobraUsageTemplate() {
@@ -77,11 +107,6 @@ func Execute() {
 	setCobraUsageTemplate()
 	setVersionTemplate()
 
-	// Parse flags early so the root command is aware of global flags
-	// before any subcommand executes. This is necessary to configure
-	// things like the output format (view type) and writer upfront.
-	_ = rootCmd.ParseFlags(os.Args[1:])
-
 	// Disable color output if NO_COLOR is set in the environment
 	if _, exists := os.LookupEnv("NO_COLOR"); exists {
 		color.NoColor = true
@@ -89,29 +114,11 @@ func Execute() {
 		color.NoColor = false
 	}
 
-	// Set up the view type based on the `--json` flag
-	viewType := view.ViewHuman
-	if jsonFlag {
-		viewType = view.ViewJSON
-	}
-
-	logLevel := view.LogLevelSilent
-	logEnv := os.Getenv("CEK_LOG")
-	switch strings.ToLower(logEnv) {
-	case "debug":
-		logLevel = view.LogLevelDebug
-	case "info":
-		logLevel = view.LogLevelInfo
-	default:
-		// Unknown value: keep default (silent)
-	}
-	if debugFlag {
-		logLevel = view.LogLevelDebug
-	}
-
 	// Create a new CLI instance, which is a global context that each command
-	// can use to access, useful for view rendering, etc.
-	cli := NewCLI(viewType, os.Stdout, logLevel)
+	// can use to access, useful for view rendering, etc. It starts with the
+	// human view; ConfigureView swaps it once the global flags are parsed.
+	cli := NewCLI(view.ViewHuman, os.Stdout, view.LogLevelSilent)
+	ConfigureView(rootCmd, cli)
 
 	// Add all subcommands to the root command
 	AddCommands(rootCmd, cli)
