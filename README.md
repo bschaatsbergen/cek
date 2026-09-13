@@ -149,27 +149,55 @@ cek tree --layer 4 python:3.12-slim /usr/local/bin
 ### Inspect image metadata
 
 View image details including digest, creation time, architecture, total size,
-and individual layer information.
+and individual layer information. Each layer is listed with its digest, size
+and media type. Layers that carry annotations in the manifest, such as
+encrypted layers, get a separate table with the annotation keys and values.
 
 ```bash
 cek inspect nginx
 Image: nginx
 Registry: index.docker.io
-Digest: sha256:ec0ee8695f2f71addca9b40f27df0fdfbde460485a2b68b834e18ea856542f1e
-Created: 2025-12-09T22:50:18Z
-OS/Arch: linux/arm64
-Size: 55.6 MB
+Digest: sha256:988dc6ba913b85fe049a5d06452fe8766c4abda44a06614f47458ff4579330fd
+Created: 2026-09-02T21:04:32Z
+OS/Arch: linux/amd64
+Size: 63.2 MB
 
 Layers:
-#  Digest                                                                   Size
-1  sha256:f626fba1463b32b20f78d29b52dcf15be927dbb5372a9ba6a5f97aad47ae220b  28.7 MB
-2  sha256:89d0a1112522e6e01ed53f0b339cb1a121ea7e19cfebdb325763bf5045ba7a47  26.8 MB
-3  sha256:1b7c70849006971147c73371c868b789998c7220ba42e777d2d7e5894ac26e54  627 B
-4  sha256:b8b0307e95c93307d99d02d3bdc61c3ed0b8d26685bb9bafc6c62d4170a2363e  954 B
-5  sha256:fe1d23b41cb3b150a19a697809a56f455f1dac2bf8b60c8a1d0427965126aaf9  403 B
-6  sha256:fda1d961e2b70f435ee701baaa260a569d7ea2eacd9f6dba8ac0320dc9b7d9fe  1.2 KB
-7  sha256:10dbff0ec650f05c6cdcb80c2e7cc93db11c265b775a7a54e1dd48e4cbcebbbc  1.4 KB
+#  Digest                                                                   Size     Media Type
+1  sha256:6310eb16bf4251731feab01e8f633bf5e2d75a657ccad97f420b1f83cce457be  28.4 MB  application/vnd.oci.image.layer.v1.tar+gzip
+2  sha256:956faab5efb34579d85a5c0b79f1b44c111197a0c1fea9c18b2e836821d68480  34.8 MB  application/vnd.oci.image.layer.v1.tar+gzip
+3  sha256:a44b5c8be61615ee48a9525b9aa459639de34e8e004ad3b3a6f52b793051da3c  629 B    application/vnd.oci.image.layer.v1.tar+gzip
+4  sha256:02fc02c4ab8d7c507d6a06a08833d6b669278849c9533729535984c86ff199cb  956 B    application/vnd.oci.image.layer.v1.tar+gzip
+5  sha256:c12f394dea35bb47b5511557233c5abec5360e40f9fade8f3ff1de488ecdc696  404 B    application/vnd.oci.image.layer.v1.tar+gzip
+6  sha256:07db7bf2649b9fe0ccc9c86378fc5ed36e90bdfe6acf529e567c45ee96a2b9c3  1.2 KB   application/vnd.oci.image.layer.v1.tar+gzip
+7  sha256:f340c1b7c1d6861ed76e1adc2630b145227b071b54259bc97e318297cb4b8156  1.4 KB   application/vnd.oci.image.layer.v1.tar+gzip
 ```
+
+Use `--json` to get the same data, including per-layer `mediaType` and
+`annotations`, as structured output.
+
+### Write a raw layer blob
+
+Write the bytes of a layer blob to standard output exactly as the registry
+stores them: no decompression, no tar parsing. Use it to see what a registry
+actually holds, to hash a layer, or to save a layer for offline inspection.
+Layers are 1-indexed, matching the `#` column of `cek inspect`.
+
+```bash
+# A gzip layer starts with the gzip magic bytes 1f 8b
+cek blob --layer 1 alpine:latest | head -c 32 | xxd
+
+# Hash the blob; the digest matches the layer digest shown by cek inspect
+cek blob --layer 2 --pull always nginx:latest | shasum -a 256
+
+# Save a layer for offline inspection
+cek blob --layer 2 --pull always nginx:latest > layer.tar.gz
+```
+
+Use `--pull always` to read the blob from the registry. A blob served by a
+local container daemon is re-exported by the daemon and may not be
+byte-identical to the registry copy, so its hash can differ from the
+registry's layer digest.
 
 ## Container Daemon Support
 
