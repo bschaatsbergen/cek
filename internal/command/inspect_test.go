@@ -248,3 +248,15 @@ func TestRunInspect_JSONLayerMediaType(t *testing.T) {
 	assert.Contains(t, output.Layers[0].Digest, "sha256:")
 	assert.Contains(t, output.Layers[0].MediaType, "application/vnd.")
 }
+
+func TestInspectCommand_InvalidPullPolicy(t *testing.T) {
+	buf := new(bytes.Buffer)
+	cli := command.NewCLI(view.ViewHuman, buf, view.LogLevelSilent)
+	cmd := command.NewInspectCommand(cli)
+	cmd.SetArgs([]string{"alpine:latest", "--pull", "bogus"})
+
+	err := cmd.Execute()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `invalid pull policy "bogus"`)
+	assert.Empty(t, buf.String())
+}

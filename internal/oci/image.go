@@ -3,6 +3,7 @@ package oci
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/google/go-containerregistry/pkg/name"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
@@ -17,6 +18,21 @@ const (
 	PullIfNotPresent PullPolicy = "if-not-present"
 	PullNever        PullPolicy = "never"
 )
+
+// PullPolicies lists the accepted pull policy values.
+func PullPolicies() []string {
+	return []string{string(PullAlways), string(PullIfNotPresent), string(PullNever)}
+}
+
+// ParsePullPolicy validates a pull policy given on the command line.
+func ParsePullPolicy(s string) (PullPolicy, error) {
+	switch p := PullPolicy(s); p {
+	case PullAlways, PullIfNotPresent, PullNever:
+		return p, nil
+	default:
+		return "", fmt.Errorf("invalid pull policy %q: must be one of %s", s, strings.Join(PullPolicies(), ", "))
+	}
+}
 
 type FetchOptions struct {
 	Platform   string
@@ -33,7 +49,10 @@ func FetchImage(ctx context.Context, imageRef string, opts *FetchOptions) (v1.Im
 
 	pullPolicy := PullIfNotPresent
 	if opts != nil && opts.PullPolicy != "" {
-		pullPolicy = opts.PullPolicy
+		pullPolicy, err = ParsePullPolicy(string(opts.PullPolicy))
+		if err != nil {
+			return nil, nil, err
+		}
 	}
 
 	// Check daemon cache first to avoid registry rate limits.
