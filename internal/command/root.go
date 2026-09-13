@@ -106,13 +106,6 @@ func Execute() {
 	setCobraUsageTemplate()
 	setVersionTemplate()
 
-	// Disable color output if NO_COLOR is set in the environment
-	if _, exists := os.LookupEnv("NO_COLOR"); exists {
-		color.NoColor = true
-	} else {
-		color.NoColor = false
-	}
-
 	// Create a new CLI instance, which is a global context that each command
 	// can use to access, useful for view rendering, etc. It starts with the
 	// human view; ConfigureView swaps it once the global flags are parsed.
