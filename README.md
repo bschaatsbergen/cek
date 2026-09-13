@@ -1,6 +1,6 @@
 # cek (container exploration kit)
 
-[![Go Report Card](https://goreportcard.com/badge/github.com/bschaatsbergen/cek)](https://goreportcard.com/report/github.com/bschaatsbergen/cek)
+[![CI](https://github.com/bschaatsbergen/cek/actions/workflows/ci.yaml/badge.svg)](https://github.com/bschaatsbergen/cek/actions/workflows/ci.yaml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 Explore OCI container images without running them.
