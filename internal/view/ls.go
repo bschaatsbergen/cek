@@ -15,6 +15,8 @@ type FileInfo struct {
 	Size int64
 	// Path is absolute and clean, without a trailing slash.
 	Path string
+	// Link is the target of a symlink, empty for anything else.
+	Link string
 }
 
 // IsDir reports whether the entry is a directory, from its mode string.
@@ -22,12 +24,17 @@ func (f FileInfo) IsDir() bool {
 	return strings.HasPrefix(f.Mode, "d")
 }
 
-// displayPath is the path as ls shows it: directories end in a slash.
+// displayPath is the path as ls shows it: directories end in a slash and
+// symlinks point at their target.
 func (f FileInfo) displayPath() string {
-	if f.IsDir() {
+	switch {
+	case f.IsDir():
 		return f.Path + "/"
+	case f.Link != "":
+		return f.Path + " -> " + f.Link
+	default:
+		return f.Path
 	}
-	return f.Path
 }
 
 // LsData contains the file listing information to be rendered.
@@ -93,6 +100,7 @@ func (v *lsJSONView) Render(data *LsData) error {
 		Mode string `json:"mode"`
 		Size int64  `json:"size"`
 		Path string `json:"path"`
+		Link string `json:"link,omitempty"`
 	}
 
 	type jsonOutput struct {

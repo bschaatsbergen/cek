@@ -443,3 +443,13 @@ func TestRunLs_JSONPathsAreClean(t *testing.T) {
 		assert.False(t, strings.HasSuffix(f.Path, "/"), "path %q must not end in a slash", f.Path)
 	}
 }
+
+func TestRunLs_SymlinksShowTarget(t *testing.T) {
+	buf := new(bytes.Buffer)
+	cli := command.NewCLI(view.ViewHuman, buf, view.LogLevelSilent)
+	cmd := command.NewLsCommand(cli)
+	cmd.SetArgs([]string{"alpine:latest", "/bin/sh"})
+
+	require.NoError(t, cmd.Execute())
+	assert.Regexp(t, `lrwxrwxrwx\s+0 B\s+/bin/sh -> \S*busybox`, buf.String())
+}

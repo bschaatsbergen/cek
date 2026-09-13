@@ -43,9 +43,13 @@ func listFiles(layers []v1.Layer, layer int) ([]view.FileInfo, error) {
 }
 
 func fileInfo(e *overlay.Entry) view.FileInfo {
-	return view.FileInfo{
+	info := view.FileInfo{
 		Mode: e.ModeString(),
 		Size: e.Size,
 		Path: e.Path,
 	}
+	if e.IsSymlink() {
+		info.Link = e.Linkname
+	}
+	return info
 }
