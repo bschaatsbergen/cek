@@ -42,7 +42,6 @@ _________ _______________  __.
 		},
 	}
 
-	cmd.CompletionOptions.DisableDefaultCmd = true
 	cmd.PersistentFlags().Bool("json", false, "Output in JSON format")
 	cmd.PersistentFlags().Bool("debug", false, "Set log level to debug")
 	return cmd

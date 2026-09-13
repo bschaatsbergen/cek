@@ -200,6 +200,26 @@ local container daemon is re-exported by the daemon and may not be
 byte-identical to the registry copy, so its hash can differ from the
 registry's layer digest.
 
+## Shell Completion
+
+cek generates completion scripts for bash, zsh, fish and PowerShell.
+Completion covers subcommands, flags, and the values of `--pull` and
+`--platform`.
+
+```bash
+# bash
+cek completion bash > /etc/bash_completion.d/cek
+
+# zsh
+cek completion zsh > "${fpath[1]}/_cek"
+
+# fish
+cek completion fish > ~/.config/fish/completions/cek.fish
+
+# PowerShell
+cek completion powershell | Out-String | Invoke-Expression
+```
+
 ## Container Daemon Support
 
 cek works with all popular container daemons by connecting to the container

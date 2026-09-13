@@ -7,6 +7,7 @@ import (
 
 	"github.com/bschaatsbergen/cek/internal/command"
 	"github.com/bschaatsbergen/cek/internal/view"
+	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -20,7 +21,7 @@ func TestNewRootCommand(t *testing.T) {
 	assert.NotEmpty(t, cmd.Version)
 	assert.True(t, cmd.SilenceUsage)
 	assert.True(t, cmd.SilenceErrors)
-	assert.True(t, cmd.CompletionOptions.DisableDefaultCmd)
+	assert.False(t, cmd.CompletionOptions.DisableDefaultCmd)
 }
 
 func TestNewRootCommand_HasJSONFlag(t *testing.T) {
@@ -122,4 +123,34 @@ func TestConfigureView_DefaultsToHumanView(t *testing.T) {
 
 	require.NoError(t, root.Execute())
 	assert.Contains(t, buf.String(), "Image: alpine:latest")
+}
+
+func TestRootCommand_ShellCompletion(t *testing.T) {
+	for _, shell := range []string{"bash", "zsh", "fish", "powershell"} {
+		t.Run(shell, func(t *testing.T) {
+			buf := new(bytes.Buffer)
+			cli := command.NewCLI(view.ViewHuman, buf, view.LogLevelSilent)
+			root := command.NewRootCommand()
+			command.AddCommands(root, cli)
+			root.SetOut(buf)
+			root.SetArgs([]string{"completion", shell})
+
+			require.NoError(t, root.Execute())
+			assert.Contains(t, buf.String(), "cek")
+		})
+	}
+}
+
+func TestFetchFlags_CompletePullPolicies(t *testing.T) {
+	buf := new(bytes.Buffer)
+	cli := command.NewCLI(view.ViewHuman, buf, view.LogLevelSilent)
+	root := command.NewRootCommand()
+	command.AddCommands(root, cli)
+	root.SetOut(buf)
+	root.SetArgs([]string{cobra.ShellCompRequestCmd, "inspect", "--pull", ""})
+
+	require.NoError(t, root.Execute())
+	assert.Contains(t, buf.String(), "always\n")
+	assert.Contains(t, buf.String(), "if-not-present\n")
+	assert.Contains(t, buf.String(), "never\n")
 }
