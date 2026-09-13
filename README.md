@@ -82,15 +82,17 @@ cek cat nginx:latest /etc/nginx/nginx.conf
 cek cat --layer 2 nginx:latest /etc/nginx/nginx.conf
 
 # Pipe to other tools
-cek cat alpine:latest /usr/lib/os-release | grep VERSION_ID
+cek cat alpine:latest /etc/os-release | grep VERSION_ID
 
 # Compare configuration between image versions
 diff <(cek cat nginx:1.28 /etc/nginx/nginx.conf) \
      <(cek cat nginx:1.26 /etc/nginx/nginx.conf)
 ```
 
-The `cat` command searches layers top-down to find the final file state after
-all overlays, just like in a running container.
+The `cat` command reads the file as it exists in the merged filesystem, just
+like in a running container: a file deleted by an upper layer is gone, and
+symlinks are followed, so `/etc/os-release` on Alpine resolves through its
+symlink to `/usr/lib/os-release`.
 
 ### List available tags
 

@@ -1,14 +1,11 @@
 package command
 
 import (
-	"archive/tar"
 	"context"
 	"fmt"
-	"io"
-	"path/filepath"
-	"strings"
 
 	"github.com/bschaatsbergen/cek/internal/oci"
+	"github.com/bschaatsbergen/cek/internal/overlay"
 	"github.com/bschaatsbergen/cek/internal/view"
 	"github.com/spf13/cobra"
 )
@@ -28,9 +25,10 @@ func NewCatCommand(cli *CLI) *cobra.Command {
 		Short: "Show file contents from an OCI image",
 		Long: highlight("cek cat alpine:latest /etc/alpine-release") + "\n\n" +
 			"Show file contents from an OCI image.\n\n" +
-			"By default, shows the file as it appears in the final overlay\n" +
-			"(top layer), which is what you'd see in a running container.\n" +
-			"Use --layer to read from a specific layer.\n\n" +
+			"By default, shows the file as it appears in the merged filesystem,\n" +
+			"which is what you'd see in a running container: files deleted by an\n" +
+			"upper layer are gone, and symlinks are followed. Use --layer to read\n" +
+			"from a specific layer.\n\n" +
 			"Examples:\n" +
 			"  cek cat alpine:latest /etc/alpine-release\n" +
 			"  cek cat --layer 2 nginx:alpine /etc/nginx/nginx.conf\n" +
@@ -56,10 +54,6 @@ func RunCat(ctx context.Context, cli *CLI, imageRef, filePath string, opts *CatO
 	logger := cli.Logger()
 	logger.Debug("Reading file from image", "image", imageRef, "file", filePath)
 
-	if !strings.HasPrefix(filePath, "/") {
-		filePath = "/" + filePath
-	}
-
 	img, _, err := oci.FetchImage(ctx, imageRef, opts.FetchOptions())
 	if err != nil {
 		return err
@@ -72,81 +66,33 @@ func RunCat(ctx context.Context, cli *CLI, imageRef, filePath string, opts *CatO
 
 	logger.Debug("Found layers", "count", len(layers))
 
-	var layersToSearch []int
-	if opts.Layer > 0 {
-		if opts.Layer > len(layers) {
-			return fmt.Errorf("layer %d does not exist (image has %d layers)", opts.Layer, len(layers))
-		}
-		layersToSearch = []int{opts.Layer - 1}
-	} else {
-		// Search top-down to find the final file state after all overlays.
-		for i := len(layers) - 1; i >= 0; i-- {
-			layersToSearch = append(layersToSearch, i)
-		}
-	}
-
-	for _, layerIdx := range layersToSearch {
-		layer := layers[layerIdx]
-		content, found, err := extractFileFromLayer(layer, filePath)
-		if err != nil {
-			return fmt.Errorf("failed to read layer %d: %w", layerIdx+1, err)
-		}
-
-		if found {
-			return cli.Cat().Render(&view.CatData{
-				Content: content,
-			})
-		}
-	}
-
-	return fmt.Errorf("file not found: %s", filePath)
-}
-
-// extractFileFromLayer returns file contents if found in the layer's tar archive.
-// Returns (content, found, error) where found indicates whether the file exists.
-func extractFileFromLayer(layer interface {
-	Uncompressed() (io.ReadCloser, error)
-}, targetPath string) (content string, found bool, err error) {
-	rc, err := layer.Uncompressed()
+	fs, layers, err := buildFS(layers, opts.Layer)
 	if err != nil {
-		return "", false, fmt.Errorf("failed to get uncompressed layer: %w", err)
+		return err
+	}
+
+	entry, err := fs.Resolve(filePath)
+	if err != nil {
+		return err
+	}
+	switch {
+	case entry.IsDir():
+		return fmt.Errorf("%s: is a directory", entry.Path)
+	case !entry.IsRegular():
+		return fmt.Errorf("%s: not a regular file", entry.Path)
+	}
+
+	logger.Debug("Resolved file", "path", entry.Path, "layer", entry.Layer+1)
+
+	rc, err := overlay.Open(layers[entry.Layer], entry)
+	if err != nil {
+		return err
 	}
 	defer func() {
 		_ = rc.Close()
 	}()
 
-	tr := tar.NewReader(rc)
-	normalizedTarget := "/" + strings.TrimPrefix(targetPath, "/")
-
-	for {
-		header, err := tr.Next()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return "", false, fmt.Errorf("failed to read tar header: %w", err)
-		}
-
-		tarPath := "/" + strings.TrimPrefix(header.Name, "/")
-
-		if tarPath == normalizedTarget {
-			// Whiteout files indicate the file was deleted in this layer.
-			if strings.HasPrefix(filepath.Base(header.Name), ".wh.") {
-				return "", false, nil
-			}
-
-			if header.Typeflag != tar.TypeReg {
-				return "", false, fmt.Errorf("%s is not a regular file (type: %c)", normalizedTarget, header.Typeflag)
-			}
-
-			content, err := io.ReadAll(tr)
-			if err != nil {
-				return "", false, fmt.Errorf("failed to read file contents: %w", err)
-			}
-
-			return string(content), true, nil
-		}
-	}
-
-	return "", false, nil
+	return cli.Cat().Render(&view.CatData{
+		Reader: rc,
+	})
 }
