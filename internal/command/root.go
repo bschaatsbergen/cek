@@ -137,5 +137,6 @@ func AddCommands(root *cobra.Command, cli *CLI) {
 		NewBlobCommand(cli),
 		NewManifestCommand(cli),
 		NewConfigCommand(cli),
+		NewDiffCommand(cli),
 	)
 }

@@ -14,6 +14,7 @@ type Viewer interface {
 	Tags() TagsView
 	Blob() BlobView
 	Raw() RawView
+	Diff() DiffView
 	Logger() Logger
 }
 
@@ -74,6 +75,10 @@ func (h *HumanView) Raw() RawView {
 	return newRawHumanView(h)
 }
 
+func (h *HumanView) Diff() DiffView {
+	return newDiffHumanView(h)
+}
+
 func (h *HumanView) Logger() Logger {
 	return h.logger
 }
@@ -122,6 +127,10 @@ func (j *JSONView) Blob() BlobView {
 
 func (j *JSONView) Raw() RawView {
 	return newRawJSONView(j)
+}
+
+func (j *JSONView) Diff() DiffView {
+	return newDiffJSONView(j)
 }
 
 func (j *JSONView) Logger() Logger {

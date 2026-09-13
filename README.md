@@ -137,6 +137,47 @@ Use cases include air-gapped deployments, image backups, sharing images without
 pushing to a registry, and transferring images between different container
 runtimes.
 
+### Compare two images
+
+`cek diff` shows which layers two images share and which files were added,
+removed or modified between their merged filesystems. Files are compared by
+content, so a rebuilt file with the same size still shows up. Permission
+changes and symlink retargets count as modifications too. Directories are
+not listed; their files are.
+
+Markers follow `terraform plan`: `+` added, `-` removed, `~` modified,
+`=` shared.
+
+```bash
+cek diff alpine:3.21 alpine:3.22 /etc
+Layers:
+  - sha256:897d797d2723cf0e318402f4d6f37d51b011517e5cf09246b22155f0fa90dc81  3.5 MB
+  + sha256:f7ee36c9aa34bbb665f975c76e5c0d1607f0674b94c84cfb0061f87006ea5d10  3.6 MB
+
+Files:
+  ~ /etc/alpine-release                 7 B -> 7 B
+  ~ /etc/apk/repositories               103 B -> 103 B
+  ~ /etc/issue                          54 B -> 51 B
+  - /etc/modprobe.d/kms.conf            91 B
+  ~ /etc/secfixes.d/alpine              97 B -> 97 B
+  ~ /etc/ssl/certs/ca-certificates.crt  212.7 KB -> 175.2 KB
+  ~ /etc/ssl/openssl.cnf                12.0 KB -> 12.1 KB
+  ~ /etc/ssl/openssl.cnf.dist           12.0 KB -> 12.1 KB
+
+0 added, 1 removed, 7 modified
+```
+
+Three of those files changed without changing size, which a size or
+timestamp comparison would miss.
+
+Scope the comparison to a directory by passing a path. With `--json`, each
+file carries the mode, size, symlink target and content digest on both
+sides, which makes the output easy to filter:
+
+```bash
+cek --json diff myapp:v1 myapp:v2 | jq '.files[] | select(.status == "modified") | .path'
+```
+
 ### Display directory tree
 
 Show the directory tree structure of an OCI image, making it easy to visualize
