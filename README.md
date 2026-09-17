@@ -173,7 +173,7 @@ content, so a rebuilt file with the same size still shows up. Permission
 changes and symlink retargets count as modifications too. Directories are
 not listed; their files are.
 
-Markers follow `terraform plan`: `+` added, `-` removed, `~` modified,
+Markers: `+` added, `-` removed, `~` modified,
 `=` shared.
 
 ```bash
