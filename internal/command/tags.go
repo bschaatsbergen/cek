@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/bschaatsbergen/cek/internal/oci"
 	"github.com/bschaatsbergen/cek/internal/view"
 	"github.com/google/go-containerregistry/pkg/name"
-	"github.com/google/go-containerregistry/pkg/v1/remote"
 	"github.com/spf13/cobra"
 )
 
@@ -56,14 +56,9 @@ func RunTags(ctx context.Context, cli *CLI, imageRef string, opts *TagsOptions) 
 
 	logger.Debug("Fetching tags from registry", "repository", repo.String())
 
-	// List tags from remote registry
-	remoteOpts := []remote.Option{
-		remote.WithContext(ctx),
-	}
-
-	tags, err := remote.List(repo, remoteOpts...)
+	tags, err := oci.ListTags(ctx, repo)
 	if err != nil {
-		return fmt.Errorf("failed to list tags: %w", err)
+		return err
 	}
 
 	// Reverse to display newest tags first.

@@ -11,9 +11,8 @@ import (
 )
 
 type ExportOptions struct {
-	Output   string
-	Pull     string
-	Platform string
+	Output string
+	FetchFlags
 }
 
 func NewExportCommand(cli *CLI) *cobra.Command {
@@ -43,8 +42,7 @@ func NewExportCommand(cli *CLI) *cobra.Command {
 
 	cmd.Flags().StringVarP(&opts.Output, "output", "o", "", "Output file path (required)")
 	_ = cmd.MarkFlagRequired("output")
-	cmd.Flags().StringVar(&opts.Pull, "pull", "if-not-present", "Pull policy (always, if-not-present, never)")
-	cmd.Flags().StringVar(&opts.Platform, "platform", "", "Target platform (e.g., linux/amd64, linux/arm64)")
+	AddFetchFlags(cmd, &opts.FetchFlags)
 
 	return cmd
 }
@@ -53,11 +51,7 @@ func RunExport(ctx context.Context, cli *CLI, imageRef string, opts *ExportOptio
 	logger := cli.Logger()
 	logger.Debug("Exporting image", "image", imageRef, "output", opts.Output)
 
-	fetchOpts := &oci.FetchOptions{
-		Platform:   opts.Platform,
-		PullPolicy: oci.PullPolicy(opts.Pull),
-	}
-	img, ref, err := oci.FetchImage(ctx, imageRef, fetchOpts)
+	img, ref, err := oci.FetchImage(ctx, imageRef, opts.FetchOptions())
 	if err != nil {
 		return err
 	}

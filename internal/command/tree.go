@@ -15,8 +15,6 @@ import (
 
 type TreeOptions struct {
 	Layer     int
-	Platform  string
-	Pull      string
 	Path      string
 	Level     int
 	All       bool
@@ -24,6 +22,7 @@ type TreeOptions struct {
 	Exclude   string
 	Human     bool
 	DirsFirst bool
+	FetchFlags
 }
 
 func NewTreeCommand(cli *CLI) *cobra.Command {
@@ -67,8 +66,7 @@ func NewTreeCommand(cli *CLI) *cobra.Command {
 	cmd.Flags().StringVarP(&opts.Exclude, "I", "I", "", "Exclude files matching pattern (glob)")
 	cmd.Flags().BoolVar(&opts.Human, "human", false, "Show file sizes in human-readable format")
 	cmd.Flags().BoolVar(&opts.DirsFirst, "dirsfirst", false, "List directories before files")
-	cmd.Flags().StringVar(&opts.Platform, "platform", "", "Specify platform (e.g., linux/amd64, linux/arm64)")
-	cmd.Flags().StringVar(&opts.Pull, "pull", "if-not-present", "Image pull policy (always, if-not-present, never)")
+	AddFetchFlags(cmd, &opts.FetchFlags)
 
 	return cmd
 }
@@ -77,11 +75,7 @@ func RunTree(ctx context.Context, cli *CLI, imageRef string, opts *TreeOptions) 
 	logger := cli.Logger()
 	logger.Debug("Building tree for image", "image", imageRef)
 
-	fetchOpts := &oci.FetchOptions{
-		Platform:   opts.Platform,
-		PullPolicy: oci.PullPolicy(opts.Pull),
-	}
-	img, _, err := oci.FetchImage(ctx, imageRef, fetchOpts)
+	img, _, err := oci.FetchImage(ctx, imageRef, opts.FetchOptions())
 	if err != nil {
 		return err
 	}
@@ -93,26 +87,9 @@ func RunTree(ctx context.Context, cli *CLI, imageRef string, opts *TreeOptions) 
 
 	logger.Debug("Found layers", "count", len(layers))
 
-	var files []view.FileInfo
-
-	if opts.Layer > 0 {
-		if opts.Layer > len(layers) {
-			return fmt.Errorf("layer %d does not exist (image has %d layers)", opts.Layer, len(layers))
-		}
-		layerIdx := opts.Layer - 1
-		layer := layers[layerIdx]
-
-		var err error
-		files, err = extractFilesFromLayer(layer)
-		if err != nil {
-			return fmt.Errorf("failed to extract files from layer %d: %w", layerIdx+1, err)
-		}
-	} else {
-		var err error
-		files, err = extractMergedFilesystem(layers)
-		if err != nil {
-			return fmt.Errorf("failed to extract merged filesystem: %w", err)
-		}
+	files, err := listFiles(layers, opts.Layer)
+	if err != nil {
+		return err
 	}
 
 	rootPath := "/"

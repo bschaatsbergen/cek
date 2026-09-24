@@ -2,6 +2,8 @@ package command_test
 
 import (
 	"bytes"
+	"encoding/json"
+	"sort"
 	"strings"
 	"testing"
 
@@ -398,4 +400,58 @@ func TestRunLs_PathNormalization(t *testing.T) {
 	output2 := buf2.String()
 	assert.NotEmpty(t, output1)
 	assert.NotEmpty(t, output2)
+}
+
+func TestRunLs_OutputIsSortedByPath(t *testing.T) {
+	buf := new(bytes.Buffer)
+	cli := command.NewCLI(view.ViewHuman, buf, view.LogLevelSilent)
+	cmd := command.NewLsCommand(cli)
+	cmd.SetArgs([]string{"alpine:latest"})
+
+	require.NoError(t, cmd.Execute())
+
+	// Rows are "<mode> <size> <unit> <path>", with " -> <target>" after
+	// the path for symlinks.
+	var paths []string
+	for _, line := range strings.Split(strings.TrimSpace(buf.String()), "\n")[1:] {
+		fields := strings.Fields(line)
+		require.GreaterOrEqual(t, len(fields), 4, line)
+		paths = append(paths, fields[3])
+	}
+	require.NotEmpty(t, paths)
+	assert.True(t, sort.StringsAreSorted(paths), "ls output must be sorted by path")
+	assert.Contains(t, paths, "/etc/")
+}
+
+func TestRunLs_JSONPathsAreClean(t *testing.T) {
+	buf := new(bytes.Buffer)
+	cli := command.NewCLI(view.ViewJSON, buf, view.LogLevelSilent)
+	cmd := command.NewLsCommand(cli)
+	cmd.SetArgs([]string{"alpine:latest", "/etc"})
+
+	require.NoError(t, cmd.Execute())
+
+	var output struct {
+		Files []struct {
+			Mode string `json:"mode"`
+			Path string `json:"path"`
+		} `json:"files"`
+	}
+	require.NoError(t, json.Unmarshal(buf.Bytes(), &output))
+	require.NotEmpty(t, output.Files)
+	assert.Equal(t, "/etc", output.Files[0].Path)
+	assert.True(t, strings.HasPrefix(output.Files[0].Mode, "d"))
+	for _, f := range output.Files {
+		assert.False(t, strings.HasSuffix(f.Path, "/"), "path %q must not end in a slash", f.Path)
+	}
+}
+
+func TestRunLs_SymlinksShowTarget(t *testing.T) {
+	buf := new(bytes.Buffer)
+	cli := command.NewCLI(view.ViewHuman, buf, view.LogLevelSilent)
+	cmd := command.NewLsCommand(cli)
+	cmd.SetArgs([]string{"alpine:latest", "/bin/sh"})
+
+	require.NoError(t, cmd.Execute())
+	assert.Regexp(t, `lrwxrwxrwx\s+0 B\s+/bin/sh -> \S*busybox`, buf.String())
 }

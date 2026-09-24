@@ -3,15 +3,17 @@ package command
 import (
 	"context"
 	"fmt"
+	"maps"
+	"slices"
 
 	"github.com/bschaatsbergen/cek/internal/oci"
 	"github.com/bschaatsbergen/cek/internal/view"
+	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/spf13/cobra"
 )
 
 type InspectOptions struct {
-	Platform string
-	Pull     string
+	FetchFlags
 }
 
 func NewInspectCommand(cli *CLI) *cobra.Command {
@@ -27,7 +29,8 @@ func NewInspectCommand(cli *CLI) *cobra.Command {
 			"  - Creation timestamp\n" +
 			"  - OS/Architecture\n" +
 			"  - Total size\n" +
-			"  - Layer information (digest and size)\n\n" +
+			"  - Runtime config (entrypoint, cmd, user, ports, env, labels)\n" +
+			"  - Layer information (digest, size, media type and annotations)\n\n" +
 			"The image reference can be:\n" +
 			"  - A tagged image: alpine:latest\n" +
 			"  - A specific digest: alpine@sha256:...\n" +
@@ -42,8 +45,7 @@ func NewInspectCommand(cli *CLI) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&opts.Platform, "platform", "", "Specify platform (e.g., linux/amd64, linux/arm64)")
-	cmd.Flags().StringVar(&opts.Pull, "pull", "if-not-present", "Image pull policy (always, if-not-present, never)")
+	AddFetchFlags(cmd, &opts.FetchFlags)
 
 	return cmd
 }
@@ -52,11 +54,7 @@ func RunInspect(ctx context.Context, cli *CLI, imageRef string, opts *InspectOpt
 	logger := cli.Logger()
 	logger.Debug("Inspecting image", "image", imageRef)
 
-	fetchOpts := &oci.FetchOptions{
-		Platform:   opts.Platform,
-		PullPolicy: oci.PullPolicy(opts.Pull),
-	}
-	img, ref, err := oci.FetchImage(ctx, imageRef, fetchOpts)
+	img, ref, err := oci.FetchImage(ctx, imageRef, opts.FetchOptions())
 	if err != nil {
 		return err
 	}
@@ -76,29 +74,24 @@ func RunInspect(ctx context.Context, cli *CLI, imageRef string, opts *InspectOpt
 		return fmt.Errorf("failed to get config file: %w", err)
 	}
 
-	layers, err := img.Layers()
+	// The manifest descriptors carry everything the registry knows about a
+	// layer: digest, size, media type and annotations.
+	manifest, err := img.Manifest()
 	if err != nil {
-		return fmt.Errorf("failed to get layers: %w", err)
+		return fmt.Errorf("failed to get manifest: %w", err)
 	}
 
 	var totalSize int64
-	layerDataList := make([]view.LayerData, 0, len(layers))
-	for i, layer := range layers {
-		layerDigest, err := layer.Digest()
-		if err != nil {
-			return fmt.Errorf("failed to get layer digest: %w", err)
-		}
-
-		size, err := layer.Size()
-		if err != nil {
-			return fmt.Errorf("failed to get layer size: %w", err)
-		}
-		totalSize += size
+	layerDataList := make([]view.LayerData, 0, len(manifest.Layers))
+	for i, desc := range manifest.Layers {
+		totalSize += desc.Size
 
 		layerDataList = append(layerDataList, view.LayerData{
-			Index:  i + 1,
-			Digest: layerDigest,
-			Size:   size,
+			Index:       i + 1,
+			Digest:      desc.Digest,
+			Size:        desc.Size,
+			MediaType:   string(desc.MediaType),
+			Annotations: desc.Annotations,
 		})
 	}
 
@@ -110,6 +103,22 @@ func RunInspect(ctx context.Context, cli *CLI, imageRef string, opts *InspectOpt
 		OS:           configFile.OS,
 		Architecture: configFile.Architecture,
 		TotalSize:    totalSize,
+		Config:       configData(&configFile.Config),
 		Layers:       layerDataList,
 	})
+}
+
+// configData copies the runtime config into the view's shape. Set-valued
+// fields come out sorted so the output is stable.
+func configData(c *v1.Config) view.ConfigData {
+	return view.ConfigData{
+		Entrypoint:   c.Entrypoint,
+		Cmd:          c.Cmd,
+		User:         c.User,
+		WorkingDir:   c.WorkingDir,
+		ExposedPorts: slices.Sorted(maps.Keys(c.ExposedPorts)),
+		Volumes:      slices.Sorted(maps.Keys(c.Volumes)),
+		Env:          c.Env,
+		Labels:       c.Labels,
+	}
 }

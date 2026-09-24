@@ -2,11 +2,14 @@ package command_test
 
 import (
 	"bytes"
+	"encoding/json"
 	"testing"
 
 	"github.com/bschaatsbergen/cek/internal/command"
 	"github.com/bschaatsbergen/cek/internal/view"
+	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestNewRootCommand(t *testing.T) {
@@ -18,7 +21,7 @@ func TestNewRootCommand(t *testing.T) {
 	assert.NotEmpty(t, cmd.Version)
 	assert.True(t, cmd.SilenceUsage)
 	assert.True(t, cmd.SilenceErrors)
-	assert.True(t, cmd.CompletionOptions.DisableDefaultCmd)
+	assert.False(t, cmd.CompletionOptions.DisableDefaultCmd)
 }
 
 func TestNewRootCommand_HasJSONFlag(t *testing.T) {
@@ -59,7 +62,7 @@ func TestAddCommands(t *testing.T) {
 	root := command.NewRootCommand()
 	command.AddCommands(root, cli)
 
-	expectedCommands := []string{"version", "inspect", "ls", "cat", "tree", "tags", "export"}
+	expectedCommands := []string{"version", "inspect", "ls", "cat", "tree", "tags", "export", "blob", "manifest", "config", "diff", "cp"}
 	for _, name := range expectedCommands {
 		cmd, _, err := root.Find([]string{name})
 		assert.NoError(t, err, "command %s should exist", name)
@@ -73,5 +76,81 @@ func TestAddCommands_Count(t *testing.T) {
 	command.AddCommands(root, cli)
 
 	assert.True(t, root.HasSubCommands())
-	assert.Len(t, root.Commands(), 7)
+	assert.Len(t, root.Commands(), 12)
+}
+
+func TestConfigureView_JSONFlagAfterSubcommandFlags(t *testing.T) {
+	buf := new(bytes.Buffer)
+	cli := command.NewCLI(view.ViewHuman, buf, view.LogLevelSilent)
+	root := command.NewRootCommand()
+	command.ConfigureView(root, cli)
+	command.AddCommands(root, cli)
+	root.SetArgs([]string{"inspect", "--pull", "always", "alpine:latest", "--json"})
+
+	require.NoError(t, root.Execute())
+
+	var output struct {
+		Image string `json:"image"`
+	}
+	require.NoError(t, json.Unmarshal(buf.Bytes(), &output), "expected JSON output, got: %s", buf.String())
+	assert.Equal(t, "alpine:latest", output.Image)
+}
+
+func TestConfigureView_JSONFlagBeforeSubcommand(t *testing.T) {
+	buf := new(bytes.Buffer)
+	cli := command.NewCLI(view.ViewHuman, buf, view.LogLevelSilent)
+	root := command.NewRootCommand()
+	command.ConfigureView(root, cli)
+	command.AddCommands(root, cli)
+	root.SetArgs([]string{"--json", "inspect", "--pull", "always", "alpine:latest"})
+
+	require.NoError(t, root.Execute())
+
+	var output struct {
+		Image string `json:"image"`
+	}
+	require.NoError(t, json.Unmarshal(buf.Bytes(), &output), "expected JSON output, got: %s", buf.String())
+	assert.Equal(t, "alpine:latest", output.Image)
+}
+
+func TestConfigureView_DefaultsToHumanView(t *testing.T) {
+	buf := new(bytes.Buffer)
+	cli := command.NewCLI(view.ViewHuman, buf, view.LogLevelSilent)
+	root := command.NewRootCommand()
+	command.ConfigureView(root, cli)
+	command.AddCommands(root, cli)
+	root.SetArgs([]string{"inspect", "--pull", "always", "alpine:latest"})
+
+	require.NoError(t, root.Execute())
+	assert.Contains(t, buf.String(), "Image: alpine:latest")
+}
+
+func TestRootCommand_ShellCompletion(t *testing.T) {
+	for _, shell := range []string{"bash", "zsh", "fish", "powershell"} {
+		t.Run(shell, func(t *testing.T) {
+			buf := new(bytes.Buffer)
+			cli := command.NewCLI(view.ViewHuman, buf, view.LogLevelSilent)
+			root := command.NewRootCommand()
+			command.AddCommands(root, cli)
+			root.SetOut(buf)
+			root.SetArgs([]string{"completion", shell})
+
+			require.NoError(t, root.Execute())
+			assert.Contains(t, buf.String(), "cek")
+		})
+	}
+}
+
+func TestFetchFlags_CompletePullPolicies(t *testing.T) {
+	buf := new(bytes.Buffer)
+	cli := command.NewCLI(view.ViewHuman, buf, view.LogLevelSilent)
+	root := command.NewRootCommand()
+	command.AddCommands(root, cli)
+	root.SetOut(buf)
+	root.SetArgs([]string{cobra.ShellCompRequestCmd, "inspect", "--pull", ""})
+
+	require.NoError(t, root.Execute())
+	assert.Contains(t, buf.String(), "always\n")
+	assert.Contains(t, buf.String(), "if-not-present\n")
+	assert.Contains(t, buf.String(), "never\n")
 }

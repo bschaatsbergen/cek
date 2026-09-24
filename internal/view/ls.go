@@ -3,6 +3,7 @@ package view
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 	"text/tabwriter"
 
 	"github.com/bschaatsbergen/cek/internal/oci"
@@ -12,7 +13,28 @@ import (
 type FileInfo struct {
 	Mode string
 	Size int64
+	// Path is absolute and clean, without a trailing slash.
 	Path string
+	// Link is the target of a symlink, empty for anything else.
+	Link string
+}
+
+// IsDir reports whether the entry is a directory, from its mode string.
+func (f FileInfo) IsDir() bool {
+	return strings.HasPrefix(f.Mode, "d")
+}
+
+// displayPath is the path as ls shows it: directories end in a slash and
+// symlinks point at their target.
+func (f FileInfo) displayPath() string {
+	switch {
+	case f.IsDir():
+		return f.Path + "/"
+	case f.Link != "":
+		return f.Path + " -> " + f.Link
+	default:
+		return f.Path
+	}
 }
 
 // LsData contains the file listing information to be rendered.
@@ -54,7 +76,7 @@ func (v *lsHumanView) Render(data *LsData) error {
 	_, _ = fmt.Fprintf(w, "Mode\tSize\tPath\n")
 
 	for _, file := range data.Files {
-		_, _ = fmt.Fprintf(w, "%s\t%s\t%s\n", file.Mode, oci.FormatBytes(file.Size), file.Path)
+		_, _ = fmt.Fprintf(w, "%s\t%s\t%s\n", file.Mode, oci.FormatBytes(file.Size), file.displayPath())
 	}
 
 	if err := w.Flush(); err != nil {
@@ -78,6 +100,7 @@ func (v *lsJSONView) Render(data *LsData) error {
 		Mode string `json:"mode"`
 		Size int64  `json:"size"`
 		Path string `json:"path"`
+		Link string `json:"link,omitempty"`
 	}
 
 	type jsonOutput struct {

@@ -3,18 +3,19 @@ package view
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 )
 
-// CatData contains the file content to be rendered.
+// CatData carries the file content to be rendered.
 type CatData struct {
-	Content string
+	Reader io.Reader
 }
 
 type CatView interface {
 	Render(data *CatData) error
 }
 
-// Human view implementation
+// Human view implementation: the bytes, streamed.
 type catHumanView struct {
 	*HumanView
 }
@@ -24,7 +25,9 @@ func newCatHumanView(hv *HumanView) *catHumanView {
 }
 
 func (v *catHumanView) Render(data *CatData) error {
-	v.Printf("%s", data.Content)
+	if _, err := io.Copy(v.Writer, data.Reader); err != nil {
+		return fmt.Errorf("failed to write file contents: %w", err)
+	}
 	return nil
 }
 
@@ -42,8 +45,13 @@ func (v *catJSONView) Render(data *CatData) error {
 		Content string `json:"content"`
 	}
 
+	content, err := io.ReadAll(data.Reader)
+	if err != nil {
+		return fmt.Errorf("failed to read file contents: %w", err)
+	}
+
 	output := jsonOutput{
-		Content: data.Content,
+		Content: string(content),
 	}
 
 	encoder := json.NewEncoder(v.Writer)

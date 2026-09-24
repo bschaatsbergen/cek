@@ -12,6 +12,10 @@ type Viewer interface {
 	Ls() LsView
 	Export() ExportView
 	Tags() TagsView
+	Blob() BlobView
+	Raw() RawView
+	Diff() DiffView
+	Cp() CpView
 	Logger() Logger
 }
 
@@ -64,6 +68,22 @@ func (h *HumanView) Tags() TagsView {
 	return newTagsHumanView(h)
 }
 
+func (h *HumanView) Blob() BlobView {
+	return newBlobHumanView(h)
+}
+
+func (h *HumanView) Raw() RawView {
+	return newRawHumanView(h)
+}
+
+func (h *HumanView) Diff() DiffView {
+	return newDiffHumanView(h)
+}
+
+func (h *HumanView) Cp() CpView {
+	return newCpHumanView(h)
+}
+
 func (h *HumanView) Logger() Logger {
 	return h.logger
 }
@@ -104,6 +124,22 @@ func (j *JSONView) Export() ExportView {
 
 func (j *JSONView) Tags() TagsView {
 	return newTagsJSONView(j)
+}
+
+func (j *JSONView) Blob() BlobView {
+	return newBlobJSONView(j)
+}
+
+func (j *JSONView) Raw() RawView {
+	return newRawJSONView(j)
+}
+
+func (j *JSONView) Diff() DiffView {
+	return newDiffJSONView(j)
+}
+
+func (j *JSONView) Cp() CpView {
+	return newCpJSONView(j)
 }
 
 func (j *JSONView) Logger() Logger {
